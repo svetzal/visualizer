@@ -47,7 +47,7 @@ export default async function run(client: MCPClient) {
 
   await new ScenarioRunner('Comprehensive Test - All 27 Tools', getHarnessOptions())
     // ========== Phase 1 Tools (5) ==========
-    
+
     // Tool 1: define_actor (x4 actors)
     .step('define_actor: Jennifer (Accountant)', async () => {
       const resp = await client.callTool<{ success: boolean; data: Actor }>('define_actor', {
@@ -188,7 +188,7 @@ export default async function run(client: MCPClient) {
     })
 
     // ========== Phase 2.5 Composition Tools (7) ==========
-    
+
     // Tool 4: assign_goal_to_actor
     .step('assign_goal_to_actor: Maria to Transaction Recording', async () => {
       const resp = await client.callTool<{ success: boolean; data: Goal }>('assign_goal_to_actor', {
@@ -224,7 +224,7 @@ export default async function run(client: MCPClient) {
     })
 
     // ========== Phase 2 CRUD Tools (15) ==========
-    
+
     // Tool 5: define_interaction (x3)
     .step('define_interaction: Enter Receipt', async () => {
       const resp = await client.callTool<{ success: boolean; data: Interaction }>('define_interaction', {
@@ -529,7 +529,7 @@ export default async function run(client: MCPClient) {
       assert(model.interactions.length === 2, `should have 2 interactions (Match Transaction deleted), got ${model.interactions.length}`);
       assert(model.questions.length === 0, 'should have 0 questions (Balance Accuracy deleted)');
       assert(model.journeys.length === 0, 'should have 0 journeys (Monthly Close deleted)');
-      
+
       // Verify gaps for deleted Maria and deleted Match Transaction interaction
       assert(model.gaps!.length >= 3, 'should have gaps for missing actor (Maria) and original test gaps');
     })
