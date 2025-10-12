@@ -39,19 +39,51 @@ This will:
 
 ## Phase 1 Testing
 
-### Quick Test
+### Automated E2E Tests
 
-Run the provided test script (requires `jq` for JSON formatting):
+Run the automated test suite:
 
 ```bash
-./test-mcp.sh
+npm run test:e2e
 ```
 
-This will create actors, goals, and gaps, and verify the visualization updates in real-time.
+This will:
+1. Build the project
+2. Connect to the running MCP server at `http://localhost:3000/mcp`
+3. Execute all test scenarios
+4. Verify tool behavior and data consistency
 
-### Manual Testing
+**Note:** The Electron app must be running (`npm start`) before running tests.
 
-Test the walking skeleton using curl to send MCP tool calls directly:
+### Adding New Test Scenarios
+
+Create new test files in `src/tests/scenarios/` following this pattern:
+
+```typescript
+import { MCPClient, assert, uniqueName } from '../harness/mcp-client.js';
+import { ScenarioRunner } from '../harness/runner.js';
+
+export default async function myScenario(client: MCPClient) {
+  const runner = new ScenarioRunner('My test scenario');
+
+  runner
+    .step('step description', async () => {
+      const result = await client.callTool('tool_name', { /* args */ });
+      assert(result.id, 'Should return an id');
+    })
+    .step('another step', async () => {
+      // More assertions...
+    });
+
+  await runner.run();
+}
+```
+
+Then add it to `src/tests/run-all-scenarios.ts`.
+
+### Manual Testing with MCP
+
+Test the MCP server directly using curl (requires the app to be running):
 
 ### 1. Create an Actor
 
@@ -229,8 +261,15 @@ screenplay-visualizer/
 │   ├── lib/
 │   │   ├── schemas.ts       # TypeScript + Zod schemas
 │   │   └── storage.ts       # JSONStorage class
-│   └── mcp-server/
-│       └── tools.ts         # MCP tool definitions
+│   ├── mcp-server/
+│   │   └── tools.ts         # MCP tool definitions
+│   └── tests/
+│       ├── run-all-scenarios.ts  # Test runner
+│       ├── harness/
+│       │   ├── mcp-client.ts     # MCP SDK client wrapper
+│       │   └── runner.ts         # Test scenario framework
+│       └── scenarios/
+│           └── *.ts              # Individual test scenarios
 ├── renderer/
 │   ├── index.html           # UI structure
 │   ├── styles.css           # Projection-ready styles

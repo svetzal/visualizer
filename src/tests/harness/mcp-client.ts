@@ -1,99 +1,60 @@
 import { randomUUID } from 'crypto';
-
-// Use Node 20+ global fetch; keep untyped to avoid DOM lib dependency
-const fetchFn: any = (globalThis as any).fetch;
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 export class MCPClient {
   private url: string;
-  private idCounter = 1;
-  private sessionId: string | null = null;
+  private client: Client | null = null;
+  private transport: StreamableHTTPClientTransport | null = null;
 
   constructor(url?: string) {
     this.url = url || process.env.MCP_URL || 'http://localhost:3000/mcp';
   }
 
-  private get endpoint(): string {
-    // Ensure no trailing slash; default endpoint is /mcp
-    return this.url.replace(/\/$/, '');
-  }
+  private async ensureConnected(): Promise<void> {
+    if (this.client) return;
 
-  // Perform the MCP initialize handshake and capture the session ID header
-  async initSession(): Promise<string> {
-    const payload = {
-      jsonrpc: '2.0',
-      id: this.idCounter++,
-      method: 'initialize',
-      params: {},
-    };
+    this.transport = new StreamableHTTPClientTransport(new URL(this.url));
+    this.client = new Client(
+      {
+        name: 'test-client',
+        version: '1.0.0',
+      },
+      {
+        capabilities: {},
+      }
+    );
 
-    const res = await fetchFn(this.endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Init failed: HTTP ${res.status}: ${text}`);
-    }
-
-    // Headers are case-insensitive; get will handle typical casing
-    const sid =
-      res.headers.get('Mcp-Session-Id') ||
-      res.headers.get('mcp-session-id') ||
-      res.headers.get('x-mcp-session') ||
-      res.headers.get('x-session-id');
-
-    if (!sid) {
-      throw new Error('No session ID returned on initialize');
-    }
-    this.sessionId = sid;
-    return sid;
+    await this.client.connect(this.transport);
   }
 
   async callTool<T = any>(name: string, args: any): Promise<T> {
-    // Ensure we have a session first
-    if (!this.sessionId) {
-      await this.initSession();
-    }
+    await this.ensureConnected();
 
-    const payload = {
-      jsonrpc: '2.0',
-      id: this.idCounter++,
-      method: 'tools/call',
-      params: {
-        name,
-        arguments: args || {},
-      },
-    };
-
-    const res = await fetchFn(this.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Mcp-Session-Id': this.sessionId!,
-      },
-      body: JSON.stringify(payload),
+    const result = await this.client!.callTool({
+      name,
+      arguments: args || {},
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      // surface more helpful message
-      throw new Error(`HTTP ${res.status}: ${text}`);
-    }
-
-    const body = await res.json();
-
     // FastMCP returns a result.content[0].text which is a JSON string payload from the tool
-    const text: string | undefined = body?.result?.content?.[0]?.text;
+    const content = result?.content as any[];
+    const text: string | undefined = content?.[0]?.text;
     if (typeof text !== 'string') {
-      throw new Error(`Unexpected MCP response shape: ${JSON.stringify(body).slice(0, 500)}...`);
+      throw new Error(`Unexpected MCP response shape: ${JSON.stringify(result).slice(0, 500)}...`);
     }
     try {
       return JSON.parse(text) as T;
     } catch (e) {
       // Some tools might return plain strings; surface them directly
       return text as unknown as T;
+    }
+  }
+
+  async close(): Promise<void> {
+    if (this.client) {
+      await this.client.close();
+      this.client = null;
+      this.transport = null;
     }
   }
 }

@@ -110,28 +110,28 @@ class JSONStorage extends EventEmitter {
     this.cache = new Map(); // type -> Entity[]
     this.basePath = basePath;
   }
-  
+
   async load(type) {
     // Read file, parse, cache, return Entity[]
   }
-  
+
   async save(type, entity) {
     // Validate with Zod
     // Add to cache
     // Atomic write (temp file + rename)
     // Emit: { type: "create", entity: type, data: entity }
   }
-  
+
   async update(type, id, partial) {
     // Find in cache, merge, validate, write
     // Emit: { type: "update", entity: type, data: updated }
   }
-  
+
   async delete(type, id) {
     // Remove from cache, write
     // Emit: { type: "delete", entity: type, data: { id } }
   }
-  
+
   async getAll(type) {
     // Return from cache (load if not present)
   }
@@ -268,13 +268,13 @@ app.on('ready', async () => {
   const dataPath = app.getPath('userData') + '/.screenplay';
   storage = new JSONStorage(dataPath);
   await storage.initialize();
-  
+
   // Start MCP server
   server = new McpServer();
   registerTools(server, storage);
   serverPort = await findAvailablePort(3000);
   await server.listen(serverPort);
-  
+
   // Create window
   mainWindow = new BrowserWindow({
     width: 1920,
@@ -285,19 +285,19 @@ app.on('ready', async () => {
       nodeIntegration: false
     }
   });
-  
+
   mainWindow.loadFile('renderer/index.html');
-  
+
   // Forward storage events to renderer
   storage.on('change', (event) => {
     mainWindow.webContents.send('model-updated', event);
   });
-  
+
   // Send server URL
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.send('server-started', `http://localhost:${serverPort}/mcp`);
   });
-  
+
   // IPC handlers
   ipcMain.handle('get-model', async () => {
     return {
@@ -361,7 +361,7 @@ function updateVisualization(model) {
   const gaps = findGaps(model);
   const nodes = [...model.actors, ...model.goals, ...model.tasks, ...model.interactions, ...gaps];
   const edges = buildEdges(model, gaps);
-  
+
   // Bind data
   const nodeSelection = svg.selectAll('.node')
     .data(nodes, d => d.id)
@@ -373,11 +373,11 @@ function updateVisualization(model) {
       update => update.call(renderNode),
       exit => exit.transition().duration(300).style('opacity', 0).remove()
     );
-  
+
   const edgeSelection = svg.selectAll('.edge')
     .data(edges, d => d.source.id + '-' + d.target.id)
     .join(/* similar pattern */);
-  
+
   // Restart simulation with new nodes
   simulation.nodes(nodes);
   simulation.force('link').links(edges);
@@ -387,7 +387,7 @@ function updateVisualization(model) {
 function findGaps(model) {
   const allIds = new Set([...model.actors, ...model.goals, ...model.tasks, ...model.interactions].map(e => e.id));
   const gaps = new Map();
-  
+
   // Check goal.assigned_to
   model.goals.forEach(goal => {
     goal.assigned_to.forEach(actor_id => {
@@ -396,7 +396,7 @@ function findGaps(model) {
       }
     });
   });
-  
+
   // Check task.composed_of
   model.tasks.forEach(task => {
     task.composed_of.forEach(interaction_id => {
@@ -405,9 +405,9 @@ function findGaps(model) {
       }
     });
   });
-  
+
   // Similar for journey.actor_id, journey.goal_ids, journey.steps[].task_id
-  
+
   return Array.from(gaps.values());
 }
 ```
@@ -472,12 +472,20 @@ screenplay-visualizer/
 
 ## Testing Strategy
 
-Testing supports two complementary paths:
+The application uses an automated E2E test harness that connects to the MCP server:
 
-- Simple Test HTTP API on :3001 (recommended for quick iteration). Use the provided scripts test-simple.sh and test-phase1.sh, or call endpoints directly: /test/reset, /test/define_actor, /test/define_goal, /test/delete_actor, /test/model.
-- MCP endpoint on :3000/mcp using FastMCP httpStream JSON-RPC envelopes. Use test-mcp.sh or follow the README JSON-RPC examples. Note: a proper JSON-RPC session envelope is required; raw POSTs without the envelope will fail.
+- **E2E Tests**: Run `npm run test:e2e` to execute all test scenarios against the MCP server
+- **Test Framework**: Located in `src/tests/`, uses the official MCP SDK client (`@modelcontextprotocol/sdk`)
+- **Adding Tests**: Create new scenario files in `src/tests/scenarios/` following the existing patterns
+- **MCP Endpoint**: Running on `http://localhost:3000/mcp` using FastMCP's stateless HTTP streaming mode
 
-**Phase 2:** Add all 32 tools, test with curl scripts that build a realistic model (3 actors, 5 goals, 10 tasks, 20 interactions).
+The test harness validates:
+- Tool execution and response format
+- Data model consistency
+- Gap detection and relationship handling
+- State persistence across operations
+
+**Phase 2:** Expand test scenarios to cover all 32 tools with realistic data (3 actors, 5 goals, 10 tasks, 20 interactions).
 
 **Phase 3:** Connect Claude Code, run a real ensemble session with your team. Tune force layout parameters based on what feels good during conversation flow.
 

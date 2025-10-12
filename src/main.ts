@@ -13,7 +13,6 @@ import { fileURLToPath } from 'url';
 import { promises as fs } from 'fs';
 import { JSONStorage } from './lib/storage.js';
 import { registerTools } from './mcp-server/tools.js';
-import { createTestServer } from './mcp-server/test-endpoint.js';
 
 console.log('[Main] All imports complete');
 
@@ -143,19 +142,16 @@ async function initializeApp() {
 
     serverPort = await findAvailablePort(3000);
     console.log(`[Main] Starting server on port ${serverPort}...`);
+    const httpStreamConfig: any = {
+      endpoint: '/mcp',
+      port: serverPort,
+      stateless: true, // Enable stateless mode for testing
+    };
     await server.start({
       transportType: 'httpStream',
-      httpStream: {
-        endpoint: '/mcp',
-        port: serverPort,
-      },
+      httpStream: httpStreamConfig,
     });
-    console.log(`[Main] MCP Server started on port ${serverPort}`);
-
-    // Start test HTTP server on port 3001 for easier testing
-    const testPort = 3001;
-    createTestServer(storage, testPort);
-    console.log(`[Main] Test HTTP server started on port ${testPort}`);
+    console.log(`[Main] MCP Server started on port ${serverPort} (stateless mode)`);
 
     // Create window
     console.log('[Main] Creating window...');
