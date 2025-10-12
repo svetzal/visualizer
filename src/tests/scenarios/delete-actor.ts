@@ -1,4 +1,4 @@
-import { MCPClient, assert, uniqueName } from '../harness/mcp-client.js';
+import { MCPClient, assert } from '../harness/mcp-client.js';
 import { ScenarioRunner, FullModel, Actor, Goal, getHarnessOptions } from '../harness/runner.js';
 
 export default async function run(client: MCPClient) {
@@ -7,7 +7,7 @@ export default async function run(client: MCPClient) {
   await new ScenarioRunner('Delete an actor and convert edges to gaps (standalone)', getHarnessOptions())
     .step('define_actor', async () => {
       const resp = await client.callTool<{ success: boolean; data: Actor }>('define_actor', {
-        name: uniqueName('Admin'),
+        name: 'Admin',
         description: 'System administrator',
         abilities: ['manage_users'],
         constraints: [],
@@ -17,7 +17,7 @@ export default async function run(client: MCPClient) {
     })
     .step('define_goal assigned to actor', async () => {
       const resp = await client.callTool<{ success: boolean; data: Goal }>('define_goal', {
-        name: uniqueName('User Management'),
+        name: 'User Management',
         description: 'Manage users',
         success_criteria: ['Can create users'],
         priority: 'high',

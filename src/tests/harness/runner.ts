@@ -31,8 +31,8 @@ export class ScenarioRunner {
       await fn();
       console.log('OK');
 
-      // Add delay after each step (except the last one)
-      if (this.options.stepDelay && i < this.steps.length - 1) {
+      // Add delay after each step (including the last one to see final state)
+      if (this.options.stepDelay) {
         await new Promise(resolve => setTimeout(resolve, this.options.stepDelay));
       }
     }

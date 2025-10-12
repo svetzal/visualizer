@@ -1,4 +1,4 @@
-import { MCPClient, assert, uniqueName, newMissingUUID } from '../harness/mcp-client.js';
+import { MCPClient, assert, newMissingUUID } from '../harness/mcp-client.js';
 import { ScenarioRunner, FullModel, Goal, getHarnessOptions } from '../harness/runner.js';
 
 export default async function run(client: MCPClient) {
@@ -9,7 +9,7 @@ export default async function run(client: MCPClient) {
       const missing = newMissingUUID();
       state.missingId = missing;
       const resp = await client.callTool<{ success: boolean; data: Goal }>('define_goal', {
-        name: uniqueName('Analytics'),
+        name: 'Analytics',
         description: 'Dashboards',
         success_criteria: ['<2s load'],
         priority: 'medium',

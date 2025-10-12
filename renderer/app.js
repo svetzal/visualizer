@@ -62,12 +62,28 @@ function setupSVG() {
 
   svg.call(zoom);
 
-  // Create force simulation
+  // Create force simulation with improved layout parameters
   simulation = d3.forceSimulation()
-    .force('link', d3.forceLink().id(d => d.id).distance(100))
-    .force('charge', d3.forceManyBody().strength(-300))
-    .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide().radius(40))
+    .force('link', d3.forceLink()
+      .id(d => d.id)
+      .distance(80)        // Shorter links bring connected nodes closer
+      .strength(1)         // Stronger links keep connections tight
+    )
+    .force('charge', d3.forceManyBody()
+      .strength(-150)      // Reduced repulsion (was -300) for tighter clusters
+      .distanceMax(250)    // Limit repulsion distance to keep graph compact
+    )
+    .force('center', d3.forceCenter(width / 2, height / 2)
+      .strength(0.05)      // Gentle centering to avoid overcrowding center
+    )
+    .force('collision', d3.forceCollide()
+      .radius(45)          // Slightly larger collision radius to prevent overlap
+      .strength(0.8)       // Strong collision to prevent node overlap
+    )
+    .force('x', d3.forceX(width / 2).strength(0.02))  // Gentle horizontal pull toward center
+    .force('y', d3.forceY(height / 2).strength(0.02)) // Gentle vertical pull toward center
+    .velocityDecay(0.4)    // Faster settling (default is 0.4, lower = faster)
+    .alphaDecay(0.02)      // Slower cooling for smoother transitions
     .on('tick', ticked);
 }
 
@@ -216,14 +232,38 @@ function updateVisualization() {
   const gaps = computeGaps();
   console.log('[Renderer] Computed gaps:', gaps.length);
 
-  // Build node list
-  nodes = [
+  // Build new node list from model
+  const newNodes = [
     ...currentModel.actors.map(e => ({ ...e, type: 'actor' })),
     ...currentModel.goals.map(e => ({ ...e, type: 'goal' })),
     ...currentModel.tasks.map(e => ({ ...e, type: 'task' })),
     ...currentModel.interactions.map(e => ({ ...e, type: 'interaction' })),
     ...gaps,
   ];
+
+  // Create a map of existing nodes to preserve their simulation state (x, y, vx, vy)
+  const existingNodesMap = new Map(nodes.map(node => [node.id, node]));
+
+  // Update nodes array: preserve existing nodes or add new ones
+  nodes = newNodes.map(newNode => {
+    const existingNode = existingNodesMap.get(newNode.id);
+    if (existingNode) {
+      // Preserve simulation state and update properties
+      // Keep x, y, vx, vy, fx, fy (if they exist) from the simulation
+      return {
+        ...newNode,
+        x: existingNode.x,
+        y: existingNode.y,
+        vx: existingNode.vx,
+        vy: existingNode.vy,
+        fx: existingNode.fx,
+        fy: existingNode.fy,
+      };
+    } else {
+      // New node - let simulation initialize it
+      return newNode;
+    }
+  });
 
   console.log('[Renderer] Total nodes:', nodes.length, {
     actors: currentModel.actors.length,
@@ -244,7 +284,10 @@ function updateVisualization() {
   // Update simulation
   simulation.nodes(nodes);
   simulation.force('link').links(edges);
-  simulation.alpha(0.3).restart();
+  // Use a lower alpha for updates to make transitions smoother
+  // Only use higher alpha when there are new nodes
+  const hasNewNodes = newNodes.some(n => !existingNodesMap.has(n.id));
+  simulation.alpha(hasNewNodes ? 0.3 : 0.1).restart();
 
   console.log('[Renderer] Visualization update complete');
 }
@@ -479,7 +522,9 @@ window.addEventListener('resize', () => {
   const height = window.innerHeight - 150;
 
   svg.attr('width', width).attr('height', height);
-  simulation.force('center', d3.forceCenter(width / 2, height / 2));
+  simulation.force('center', d3.forceCenter(width / 2, height / 2).strength(0.05));
+  simulation.force('x', d3.forceX(width / 2).strength(0.02));
+  simulation.force('y', d3.forceY(height / 2).strength(0.02));
   simulation.alpha(0.3).restart();
 });
 

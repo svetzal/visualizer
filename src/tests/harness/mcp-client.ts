@@ -63,11 +63,6 @@ export function assert(condition: any, message: string): asserts condition {
   if (!condition) throw new Error(`Assertion failed: ${message}`);
 }
 
-// Utility for scenarios that need a unique-ish label
-export function uniqueName(prefix: string): string {
-  return `${prefix} ${new Date().toISOString()}`;
-}
-
 export function newMissingUUID(): string {
   return randomUUID(); // valid UUID which almost certainly doesn't exist in the model yet
 }

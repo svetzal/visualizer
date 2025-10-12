@@ -104,6 +104,17 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
       });
     },
   });
+
+  // Tool: clear_model
+  server.addTool({
+    name: 'clear_model',
+    description: 'Clear all data from the model (for testing purposes)',
+    parameters: z.object({}),
+    execute: async () => {
+      await storage.clear();
+      return JSON.stringify({ success: true, message: 'Model cleared' });
+    },
+  });
 }
 
 // Helper function to compute gaps
