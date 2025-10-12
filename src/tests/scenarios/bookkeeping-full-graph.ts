@@ -167,31 +167,31 @@ export default async function run(client: MCPClient) {
     })
     .step('verify final state: 3 actors, 6 goals, 3 gaps', async () => {
       const model = await client.callTool<FullModel>('get_full_model', {});
-      
+
       // Should have 3 remaining actors (Jennifer, AP System, Sarah)
       assert(model.actors.length === 3, `Expected 3 actors, got ${model.actors.length}`);
       assert(model.actors.some(a => a.id === state.jennifer!.id), 'Jennifer should exist');
       assert(model.actors.some(a => a.id === state.apSystem!.id), 'AP System should exist');
       assert(model.actors.some(a => a.id === state.sarah!.id), 'Sarah should exist');
       assert(!model.actors.some(a => a.id === state.maria!.id), 'Maria should be deleted');
-      
+
       // Should have 6 goals
       assert(model.goals.length === 6, `Expected 6 goals, got ${model.goals.length}`);
-      
+
       // Should have 3 gaps:
       // 1. Maria (deleted) - appears in goal1 and goal2
       // 2. External Auditor (missing) - appears in goal5
       // 3. CFO (missing) - appears in goal6
       assert(Array.isArray(model.gaps), 'model.gaps should be present');
       assert(model.gaps!.length === 3, `Expected 3 gaps, got ${model.gaps!.length}`);
-      
+
       // Verify specific gaps
       const mariaGap = model.gaps!.find(g => g.id === state.maria!.id);
       assert(mariaGap && mariaGap.expected_type === 'actor', 'Maria should appear as deleted actor gap');
-      
+
       const auditorGap = model.gaps!.find(g => g.id === state.externalAuditorId);
       assert(auditorGap && auditorGap.expected_type === 'actor', 'External Auditor should appear as missing actor gap');
-      
+
       const cfoGap = model.gaps!.find(g => g.id === state.cfoId);
       assert(cfoGap && cfoGap.expected_type === 'actor', 'CFO should appear as missing actor gap');
     })
