@@ -2,20 +2,26 @@ import { MCPClient, assert, newMissingUUID } from '../harness/mcp-client.js';
 import { ScenarioRunner, FullModel, Actor, Goal, getHarnessOptions } from '../harness/runner.js';
 
 export default async function run(client: MCPClient) {
-  const state: {
-    jennifer?: Actor;
-    maria?: Actor;
-    apSystem?: Actor;
-    sarah?: Actor;
-    externalAuditorId?: string;
-    cfoId?: string;
-    goal1?: Goal;
-    goal2?: Goal;
-    goal3?: Goal;
-    goal4?: Goal;
-    goal5?: Goal;
-    goal6?: Goal;
-  } = {};
+  const state = {
+    actors: {
+      jennifer: undefined as Actor | undefined,
+      maria: undefined as Actor | undefined,
+      apSystem: undefined as Actor | undefined,
+      sarah: undefined as Actor | undefined,
+    },
+    goals: {
+      transactionRecording: undefined as Goal | undefined,
+      financialReporting: undefined as Goal | undefined,
+      taxCompliance: undefined as Goal | undefined,
+      vendorPayment: undefined as Goal | undefined,
+      auditPrep: undefined as Goal | undefined,
+      budgetPlanning: undefined as Goal | undefined,
+    },
+    missingActorIds: {
+      externalAuditor: undefined as string | undefined,
+      cfo: undefined as string | undefined,
+    },
+  };
 
   await new ScenarioRunner('Bookkeeping System - Full Graph Building', getHarnessOptions())
     // Act One: Defining the Team (Actors)
@@ -27,7 +33,7 @@ export default async function run(client: MCPClient) {
         constraints: ['requires_bookkeeper_data', 'must_follow_gaap'],
       });
       assert(resp.success, 'define_actor Jennifer should succeed');
-      state.jennifer = resp.data;
+      state.actors.jennifer = resp.data;
     })
     .step('define_actor: Maria (Bookkeeper)', async () => {
       const resp = await client.callTool<{ success: boolean; data: Actor }>('define_actor', {
@@ -37,7 +43,7 @@ export default async function run(client: MCPClient) {
         constraints: ['requires_transaction_documentation', 'cannot_approve_own_work'],
       });
       assert(resp.success, 'define_actor Maria should succeed');
-      state.maria = resp.data;
+      state.actors.maria = resp.data;
     })
     .step('define_actor: AP System (Accounts Payable System)', async () => {
       const resp = await client.callTool<{ success: boolean; data: Actor }>('define_actor', {
@@ -47,7 +53,7 @@ export default async function run(client: MCPClient) {
         constraints: ['requires_approval_workflow', 'must_maintain_audit_trail'],
       });
       assert(resp.success, 'define_actor AP System should succeed');
-      state.apSystem = resp.data;
+      state.actors.apSystem = resp.data;
     })
     .step('define_actor: Sarah (Business Owner)', async () => {
       const resp = await client.callTool<{ success: boolean; data: Actor }>('define_actor', {
@@ -57,7 +63,7 @@ export default async function run(client: MCPClient) {
         constraints: ['requires_monthly_reports', 'limited_technical_knowledge'],
       });
       assert(resp.success, 'define_actor Sarah should succeed');
-      state.sarah = resp.data;
+      state.actors.sarah = resp.data;
     })
     // Act Two: Setting Goals
     .step('define_goal: Accurate Daily Transaction Recording (HIGH)', async () => {
@@ -70,10 +76,10 @@ export default async function run(client: MCPClient) {
           'Zero discrepancies in cash accounts',
         ],
         priority: 'high',
-        assigned_to: [state.maria!.id],
+        assigned_to: [state.actors.maria!.id],
       });
       assert(resp.success, 'define_goal Transaction Recording should succeed');
-      state.goal1 = resp.data;
+      state.goals.transactionRecording = resp.data;
     })
     .step('define_goal: Monthly Financial Reporting (HIGH)', async () => {
       const resp = await client.callTool<{ success: boolean; data: Goal }>('define_goal', {
@@ -85,10 +91,10 @@ export default async function run(client: MCPClient) {
           'Cash flow statement delivered by 5th',
         ],
         priority: 'high',
-        assigned_to: [state.maria!.id, state.jennifer!.id],
+        assigned_to: [state.actors.maria!.id, state.actors.jennifer!.id],
       });
       assert(resp.success, 'define_goal Monthly Reporting should succeed');
-      state.goal2 = resp.data;
+      state.goals.financialReporting = resp.data;
     })
     .step('define_goal: Tax Compliance (HIGH)', async () => {
       const resp = await client.callTool<{ success: boolean; data: Goal }>('define_goal', {
@@ -101,10 +107,10 @@ export default async function run(client: MCPClient) {
           'Zero penalties or interest charged',
         ],
         priority: 'high',
-        assigned_to: [state.jennifer!.id],
+        assigned_to: [state.actors.jennifer!.id],
       });
       assert(resp.success, 'define_goal Tax Compliance should succeed');
-      state.goal3 = resp.data;
+      state.goals.taxCompliance = resp.data;
     })
     .step('define_goal: Vendor Payment Processing (MEDIUM)', async () => {
       const resp = await client.callTool<{ success: boolean; data: Goal }>('define_goal', {
@@ -117,14 +123,14 @@ export default async function run(client: MCPClient) {
           'Maintain good vendor relationships',
         ],
         priority: 'medium',
-        assigned_to: [state.apSystem!.id],
+        assigned_to: [state.actors.apSystem!.id],
       });
       assert(resp.success, 'define_goal Vendor Payment should succeed');
-      state.goal4 = resp.data;
+      state.goals.vendorPayment = resp.data;
     })
     .step('define_goal: Annual Audit Preparation (MEDIUM) - with GAP', async () => {
       const externalAuditor = newMissingUUID();
-      state.externalAuditorId = externalAuditor;
+      state.missingActorIds.externalAuditor = externalAuditor;
       const resp = await client.callTool<{ success: boolean; data: Goal }>('define_goal', {
         name: 'Annual Audit Preparation',
         description: 'Prepare all documentation for external audit',
@@ -138,11 +144,11 @@ export default async function run(client: MCPClient) {
         assigned_to: [externalAuditor],
       });
       assert(resp.success, 'define_goal Audit Prep should succeed');
-      state.goal5 = resp.data;
+      state.goals.auditPrep = resp.data;
     })
     .step('define_goal: Budget Planning & Analysis (HIGH) - with GAP', async () => {
       const cfo = newMissingUUID();
-      state.cfoId = cfo;
+      state.missingActorIds.cfo = cfo;
       const resp = await client.callTool<{ success: boolean; data: Goal }>('define_goal', {
         name: 'Budget Planning & Analysis',
         description: 'Develop and monitor annual budget with variance analysis',
@@ -153,46 +159,45 @@ export default async function run(client: MCPClient) {
           'Budget vs actual within 5%',
         ],
         priority: 'high',
-        assigned_to: [state.sarah!.id, cfo],
+        assigned_to: [state.actors.sarah!.id, cfo],
       });
       assert(resp.success, 'define_goal Budget Planning should succeed');
-      state.goal6 = resp.data;
+      state.goals.budgetPlanning = resp.data;
     })
     // Act Three: The Plot Twist - Maria leaves
     .step('delete_actor: Maria (Bookkeeper leaves) - creates GAPS', async () => {
       const resp = await client.callTool<{ success: boolean }>('delete_actor', {
-        id: state.maria!.id,
+        id: state.actors.maria!.id,
       });
       assert(resp.success, 'delete_actor Maria should succeed');
     })
     .step('verify final state: 3 actors, 6 goals, 3 gaps', async () => {
       const model = await client.callTool<FullModel>('get_full_model', {});
 
+
       // Should have 3 remaining actors (Jennifer, AP System, Sarah)
       assert(model.actors.length === 3, `Expected 3 actors, got ${model.actors.length}`);
-      assert(model.actors.some(a => a.id === state.jennifer!.id), 'Jennifer should exist');
-      assert(model.actors.some(a => a.id === state.apSystem!.id), 'AP System should exist');
-      assert(model.actors.some(a => a.id === state.sarah!.id), 'Sarah should exist');
-      assert(!model.actors.some(a => a.id === state.maria!.id), 'Maria should be deleted');
-
-      // Should have 6 goals
+      assert(model.actors.some(a => a.id === state.actors.jennifer!.id), 'Jennifer should exist');
+      assert(model.actors.some(a => a.id === state.actors.apSystem!.id), 'AP System should exist');
+      assert(model.actors.some(a => a.id === state.actors.sarah!.id), 'Sarah should exist');
+      assert(!model.actors.some(a => a.id === state.actors.maria!.id), 'Maria should be deleted');      // Should have 6 goals
       assert(model.goals.length === 6, `Expected 6 goals, got ${model.goals.length}`);
 
       // Should have 3 gaps:
-      // 1. Maria (deleted) - appears in goal1 and goal2
-      // 2. External Auditor (missing) - appears in goal5
-      // 3. CFO (missing) - appears in goal6
+      // 1. Maria (deleted) - affects transactionRecording and financialReporting
+      // 2. External Auditor (missing) - affects auditPrep
+      // 3. CFO (missing) - affects budgetPlanning
       assert(Array.isArray(model.gaps), 'model.gaps should be present');
       assert(model.gaps!.length === 3, `Expected 3 gaps, got ${model.gaps!.length}`);
 
       // Verify specific gaps
-      const mariaGap = model.gaps!.find(g => g.id === state.maria!.id);
+      const mariaGap = model.gaps!.find(g => g.id === state.actors.maria!.id);
       assert(mariaGap && mariaGap.expected_type === 'actor', 'Maria should appear as deleted actor gap');
 
-      const auditorGap = model.gaps!.find(g => g.id === state.externalAuditorId);
+      const auditorGap = model.gaps!.find(g => g.id === state.missingActorIds.externalAuditor);
       assert(auditorGap && auditorGap.expected_type === 'actor', 'External Auditor should appear as missing actor gap');
 
-      const cfoGap = model.gaps!.find(g => g.id === state.cfoId);
+      const cfoGap = model.gaps!.find(g => g.id === state.missingActorIds.cfo);
       assert(cfoGap && cfoGap.expected_type === 'actor', 'CFO should appear as missing actor gap');
     })
     .run();
