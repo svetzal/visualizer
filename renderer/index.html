@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screenplay Visualizer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header with server status -->
+    <header>
+      <h1>Screenplay Visualizer</h1>
+      <div id="server-status">MCP Server: <span id="server-url">Starting...</span></div>
+      <div id="stats">
+        <span id="actor-count">Actors: 0</span>
+        <span id="goal-count">Goals: 0</span>
+        <span id="task-count">Tasks: 0</span>
+        <span id="interaction-count">Interactions: 0</span>
+        <span id="gap-count">Gaps: 0</span>
+      </div>
+      <div id="controls">
+        <button id="clear-button">Clear Canvas</button>
+      </div>
+    </header>
+
+    <!-- Main visualization area -->
+    <main>
+      <svg id="force-layout"></svg>
+    </main>
+
+    <!-- Tooltip -->
+    <div id="tooltip" class="tooltip hidden">
+      <div id="tooltip-content"></div>
+    </div>
+  </div>
+
+  <!-- D3 library -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <!-- App script -->
+  <script src="app.js"></script>
+</body>
+</html>
