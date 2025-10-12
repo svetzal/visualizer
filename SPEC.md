@@ -210,66 +210,26 @@ Apply this pattern to: `actor`, `goal`, `task`, `interaction`, `question`, `jour
 
 ---
 
-### Phase 2.5: Composition Tools (7) - **NEXT PRIORITY FOR REAL USAGE**
+### Phase 2.5: Composition Tools (7) - ✅ **COMPLETE (October 2025)**
 
-**Problem:** Current CRUD tools require agents to manually manage arrays. In conversation, people say "assign this goal to Maria" not "update goal with assigned_to array [maria_id, ...existing]".
+**Problem:** CRUD tools required agents to manually manage arrays. In conversation, people say "assign this goal to Maria" not "update goal with assigned_to array [maria_id, ...existing]".
 
-**Solution:** 7 idempotent composition tools that handle array manipulation internally:
+**Solution:** 7 idempotent composition tools that handle array manipulation internally.
 
-```javascript
-// Goal assignments
-assign_goal_to_actor({ actor_id, goal_id })
-  → goal = storage.get("goal", goal_id)
-  → if !goal.assigned_to.includes(actor_id): goal.assigned_to.push(actor_id)
-  → storage.update("goal", goal_id, { assigned_to: goal.assigned_to })
-  → { success: true, data: Goal }
-
-unassign_goal_from_actor({ actor_id, goal_id })
-  → goal = storage.get("goal", goal_id)
-  → goal.assigned_to = goal.assigned_to.filter(id => id !== actor_id)
-  → storage.update("goal", goal_id, { assigned_to: goal.assigned_to })
-  → { success: true, data: Goal }
-
-// Task composition
-add_interaction_to_task({ task_id, interaction_id })
-  → task = storage.get("task", task_id)
-  → if !task.composed_of.includes(interaction_id): task.composed_of.push(interaction_id)
-  → storage.update("task", task_id, { composed_of: task.composed_of })
-  → { success: true, data: Task }
-
-remove_interaction_from_task({ task_id, interaction_id })
-  → task = storage.get("task", task_id)
-  → task.composed_of = task.composed_of.filter(id => id !== interaction_id)
-  → storage.update("task", task_id, { composed_of: task.composed_of })
-  → { success: true, data: Task }
-
-// Journey tracking
-record_journey_step({ journey_id, task_id, outcome })
-  → journey = storage.get("journey", journey_id)
-  → journey.steps.push({ task_id, outcome, timestamp: now() })
-  → storage.update("journey", journey_id, { steps: journey.steps })
-  → { success: true, data: Journey }
-
-add_goal_to_journey({ journey_id, goal_id })
-  → journey = storage.get("journey", journey_id)
-  → if !journey.goal_ids.includes(goal_id): journey.goal_ids.push(goal_id)
-  → storage.update("journey", journey_id, { goal_ids: journey.goal_ids })
-  → { success: true, data: Journey }
-
-remove_goal_from_journey({ journey_id, goal_id })
-  → journey = storage.get("journey", journey_id)
-  → journey.goal_ids = journey.goal_ids.filter(id => id !== goal_id)
-  → storage.update("journey", journey_id, { goal_ids: journey.goal_ids })
-  → { success: true, data: Journey }
-```
-
-**Implementation notes:**
+**Implementation:**
+- All tools use `storage.update()` to modify existing entities (not `storage.save()` which creates duplicates)
 - All tools are idempotent (safe to call multiple times)
 - Error if entity not found
 - No validation that referenced IDs exist (allows gaps)
-- Estimated effort: 4-6 hours
 
-**Status:** ❌ Not yet implemented - **BLOCKING REAL ENSEMBLE USAGE**
+**Implemented tools:**
+1. `assign_goal_to_actor` - Add actor to goal's assigned_to array
+2. `unassign_goal_from_actor` - Remove actor from goal's assigned_to array
+3. `add_interaction_to_task` - Add interaction to task's composed_of array
+4. `remove_interaction_from_task` - Remove interaction from task's composed_of array
+5. `record_journey_step` - Append step to journey's steps array
+6. `add_goal_to_journey` - Add goal to journey's goal_ids array
+7. `remove_goal_from_journey` - Remove goal from journey's goal_ids array
 
 ---
 
@@ -335,25 +295,42 @@ get_recent_changes({ since_timestamp? })
 
 ## Implementation Roadmap
 
-### ✅ Phase 1 + 2: Complete (20 tools)
+### ✅ Phase 1 + 2 + 2.5: Complete (27 tools, October 2025)
 - Electron app with D3 force-directed graph
 - MCP server with FastMCP on localhost:3000
 - Full CRUD for actors, goals, tasks, interactions, questions, journeys
+- 7 composition tools for natural conversation flows
 - Gap detection and real-time updates (<1s latency)
-- 5 test scenarios, 42 test steps, all passing
+- 1 comprehensive test scenario, 45 test steps, all passing
 
-### 🚧 Phase 2.5: Next Priority (7 tools, 4-6 hours)
-**Goal:** Natural conversation flows for ensemble sessions
-
-**Why:** Current tools require manual array management. Need idempotent composition tools that match natural language patterns like "assign this goal to Maria."
-
-**Tools to implement:**
-- `assign_goal_to_actor` / `unassign_goal_from_actor`
-- `add_interaction_to_task` / `remove_interaction_from_task`
-- `record_journey_step`
-- `add_goal_to_journey` / `remove_goal_from_journey`
-
-**Test:** Create `conversation-flow.ts` scenario mimicking real dialogue
+**All tools implemented:**
+1. `define_actor` - Create actors with abilities/constraints
+2. `define_goal` - Create goals with success criteria
+3. `get_full_model` - Retrieve all entities + gaps
+4. `clear_model` - Reset for testing
+5. `delete_actor` - Remove actor (creates gaps)
+6. `update_actor` - Modify actor properties
+7. `update_goal` - Modify goal properties
+8. `define_task` - Create tasks with required abilities
+9. `update_task` - Modify task properties
+10. `delete_task` - Remove task
+11. `define_interaction` - Create atomic interactions
+12. `update_interaction` - Modify interaction properties
+13. `delete_interaction` - Remove interaction
+14. `define_question` - Create open questions
+15. `update_question` - Modify question properties
+16. `delete_question` - Remove question
+17. `define_journey` - Create actor journeys
+18. `update_journey` - Modify journey properties
+19. `delete_journey` - Remove journey
+20. `delete_goal` - Remove goal
+21. `assign_goal_to_actor` - Assign goal to actor (idempotent)
+22. `unassign_goal_from_actor` - Unassign goal from actor (idempotent)
+23. `add_interaction_to_task` - Compose task from interactions (idempotent)
+24. `remove_interaction_from_task` - Remove interaction from task (idempotent)
+25. `record_journey_step` - Append step to journey (with outcome)
+26. `add_goal_to_journey` - Add goal to journey (idempotent)
+27. `remove_goal_from_journey` - Remove goal from journey (idempotent)
 
 ### 🔮 Phase 3-4: Future (as needed)
 - **Query Tools:** Add when teams ask "who can do X?" during sessions
@@ -361,9 +338,7 @@ get_recent_changes({ since_timestamp? })
 
 ---
 
-## Electron Implementation
-
-**Main Process (src/main.ts):**
+## Electron Implementation**Main Process (src/main.ts):**
 
 ```javascript
 import { app, BrowserWindow, ipcMain } from 'electron';

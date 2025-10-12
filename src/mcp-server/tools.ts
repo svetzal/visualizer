@@ -397,6 +397,171 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
       return JSON.stringify({ success: true, data: { id: args.id } });
     },
   });
+
+  // ============================================================
+  // Phase 2.5: Composition Tools (7 tools)
+  // ============================================================
+
+  // Tool: assign_goal_to_actor
+  server.addTool({
+    name: 'assign_goal_to_actor',
+    description: 'Assign a goal to an actor (idempotent)',
+    parameters: z.object({
+      actor_id: z.string().uuid().describe('Actor UUID'),
+      goal_id: z.string().uuid().describe('Goal UUID'),
+    }),
+    execute: async (args) => {
+      const goal = await storage.get('goal', args.goal_id) as Goal | null;
+      if (!goal) {
+        return JSON.stringify({ success: false, error: `Goal ${args.goal_id} not found` });
+      }
+
+      if (!goal.assigned_to.includes(args.actor_id)) {
+        goal.assigned_to.push(args.actor_id);
+        const updated = await storage.update('goal', args.goal_id, { assigned_to: goal.assigned_to });
+        return JSON.stringify({ success: true, data: updated });
+      }
+
+      return JSON.stringify({ success: true, data: goal });
+    },
+  });
+
+  // Tool: unassign_goal_from_actor
+  server.addTool({
+    name: 'unassign_goal_from_actor',
+    description: 'Unassign a goal from an actor (idempotent)',
+    parameters: z.object({
+      actor_id: z.string().uuid().describe('Actor UUID'),
+      goal_id: z.string().uuid().describe('Goal UUID'),
+    }),
+    execute: async (args) => {
+      const goal = await storage.get('goal', args.goal_id) as Goal | null;
+      if (!goal) {
+        return JSON.stringify({ success: false, error: `Goal ${args.goal_id} not found` });
+      }
+
+      goal.assigned_to = goal.assigned_to.filter((id: string) => id !== args.actor_id);
+      const updated = await storage.update('goal', args.goal_id, { assigned_to: goal.assigned_to });
+
+      return JSON.stringify({ success: true, data: updated });
+    },
+  });
+
+  // Tool: add_interaction_to_task
+  server.addTool({
+    name: 'add_interaction_to_task',
+    description: 'Add an interaction to a task composition (idempotent)',
+    parameters: z.object({
+      task_id: z.string().uuid().describe('Task UUID'),
+      interaction_id: z.string().uuid().describe('Interaction UUID'),
+    }),
+    execute: async (args) => {
+      const task = await storage.get('task', args.task_id) as Task | null;
+      if (!task) {
+        return JSON.stringify({ success: false, error: `Task ${args.task_id} not found` });
+      }
+
+      if (!task.composed_of.includes(args.interaction_id)) {
+        task.composed_of.push(args.interaction_id);
+        const updated = await storage.update('task', args.task_id, { composed_of: task.composed_of });
+        return JSON.stringify({ success: true, data: updated });
+      }
+
+      return JSON.stringify({ success: true, data: task });
+    },
+  });
+
+  // Tool: remove_interaction_from_task
+  server.addTool({
+    name: 'remove_interaction_from_task',
+    description: 'Remove an interaction from a task composition (idempotent)',
+    parameters: z.object({
+      task_id: z.string().uuid().describe('Task UUID'),
+      interaction_id: z.string().uuid().describe('Interaction UUID'),
+    }),
+    execute: async (args) => {
+      const task = await storage.get('task', args.task_id) as Task | null;
+      if (!task) {
+        return JSON.stringify({ success: false, error: `Task ${args.task_id} not found` });
+      }
+
+      task.composed_of = task.composed_of.filter((id: string) => id !== args.interaction_id);
+      const updated = await storage.update('task', args.task_id, { composed_of: task.composed_of });
+
+      return JSON.stringify({ success: true, data: updated });
+    },
+  });
+
+  // Tool: record_journey_step
+  server.addTool({
+    name: 'record_journey_step',
+    description: 'Record a new step in a journey (append-only)',
+    parameters: z.object({
+      journey_id: z.string().uuid().describe('Journey UUID'),
+      task_id: z.string().uuid().describe('Task UUID'),
+      outcome: z.enum(['success', 'failure', 'blocked']).describe('Outcome of the task'),
+    }),
+    execute: async (args) => {
+      const journey = await storage.get('journey', args.journey_id) as Journey | null;
+      if (!journey) {
+        return JSON.stringify({ success: false, error: `Journey ${args.journey_id} not found` });
+      }
+
+      journey.steps.push({
+        task_id: args.task_id,
+        outcome: args.outcome,
+        timestamp: new Date().toISOString(),
+      });
+      const updated = await storage.update('journey', args.journey_id, { steps: journey.steps });
+
+      return JSON.stringify({ success: true, data: updated });
+    },
+  });
+
+  // Tool: add_goal_to_journey
+  server.addTool({
+    name: 'add_goal_to_journey',
+    description: 'Add a goal to a journey (idempotent)',
+    parameters: z.object({
+      journey_id: z.string().uuid().describe('Journey UUID'),
+      goal_id: z.string().uuid().describe('Goal UUID'),
+    }),
+    execute: async (args) => {
+      const journey = await storage.get('journey', args.journey_id) as Journey | null;
+      if (!journey) {
+        return JSON.stringify({ success: false, error: `Journey ${args.journey_id} not found` });
+      }
+
+      if (!journey.goal_ids.includes(args.goal_id)) {
+        journey.goal_ids.push(args.goal_id);
+        const updated = await storage.update('journey', args.journey_id, { goal_ids: journey.goal_ids });
+        return JSON.stringify({ success: true, data: updated });
+      }
+
+      return JSON.stringify({ success: true, data: journey });
+    },
+  });
+
+  // Tool: remove_goal_from_journey
+  server.addTool({
+    name: 'remove_goal_from_journey',
+    description: 'Remove a goal from a journey (idempotent)',
+    parameters: z.object({
+      journey_id: z.string().uuid().describe('Journey UUID'),
+      goal_id: z.string().uuid().describe('Goal UUID'),
+    }),
+    execute: async (args) => {
+      const journey = await storage.get('journey', args.journey_id) as Journey | null;
+      if (!journey) {
+        return JSON.stringify({ success: false, error: `Journey ${args.journey_id} not found` });
+      }
+
+      journey.goal_ids = journey.goal_ids.filter((id: string) => id !== args.goal_id);
+      const updated = await storage.update('journey', args.journey_id, { goal_ids: journey.goal_ids });
+
+      return JSON.stringify({ success: true, data: updated });
+    },
+  });
 }
 
 // Helper function to compute gaps
