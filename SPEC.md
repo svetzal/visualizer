@@ -2,7 +2,9 @@
 
 **Context:** Single-screen ensemble coding where 4-6 people discuss software behavior with one Claude Code instance. Screen 1: Claude Code + evolving prototype. Screen 2 (projected): This visualization showing the specification model as it grows. The visualization must be **readable from across a room** and **update fast enough to feel responsive to conversation**.
 
-## Core Insight
+---
+
+## Electron Implementation
 
 Gaps are features, not bugs. The visualization surfaces what hasn't been discussed yet. A task referencing a non-existent interaction shows as a dangling edge—this prompts the team to realize "wait, how does login actually work?"
 
@@ -159,9 +161,24 @@ class JSONStorage extends EventEmitter {
 - ✅ `get_full_model` - Retrieve all entities and computed gaps
 - ✅ `clear_model` - Clear all data (for testing)
 
-**Phase 2+ Planned Tools:**
+**Phase 2 Implementation Status:**
+- ✅ **Actor CRUD:** `update_actor`, `delete_actor` (already done in Phase 1)
+- ✅ **Goal CRUD:** `update_goal`, `delete_goal`
+- ✅ **Task CRUD:** `define_task`, `update_task`, `delete_task`
+- ✅ **Interaction CRUD:** `define_interaction`, `update_interaction`, `delete_interaction`
+- ✅ **Question CRUD:** `define_question`, `update_question`, `delete_question`
+- ✅ **Journey CRUD:** `define_journey`, `update_journey`, `delete_journey`
+- ✅ **Total:** 20 tools implemented (was 5, added 15)
+- ✅ **Testing:** Comprehensive bookkeeping scenario with 31 test steps
+- ✅ **Gap detection:** Working for all entity types
 
-### CRUD Tools (18 total)
+**Current State:** Basic CRUD operations complete. System can model actors, goals, tasks, interactions, questions, and journeys with full gap detection. However, **not ready for real ensemble conversations** - need richer interaction tools first (see Phase 2.5 below).
+
+**Phase 2.5: Composition & Relationship Tools (NEEDED BEFORE REAL USAGE)**
+
+Before using this in actual ensemble coding sessions, we need tools that better express relationships without requiring manual CRUD operations:
+
+### CRUD Tools (18 total - PARTIALLY COMPLETE)
 
 **Creation Pattern:**
 
@@ -189,27 +206,76 @@ delete_actor({ id })
 
 Apply this pattern to: `actor`, `goal`, `task`, `interaction`, `question`, `journey`
 
-### Composition Tools (3)
+**Status:** ✅ All CRUD operations implemented (20 tools total)
+
+---
+
+### Phase 2.5: Composition Tools (7) - **NEXT PRIORITY FOR REAL USAGE**
+
+**Problem:** Current CRUD tools require agents to manually manage arrays. In conversation, people say "assign this goal to Maria" not "update goal with assigned_to array [maria_id, ...existing]".
+
+**Solution:** 7 idempotent composition tools that handle array manipulation internally:
 
 ```javascript
+// Goal assignments
 assign_goal_to_actor({ actor_id, goal_id })
   → goal = storage.get("goal", goal_id)
-  → goal.assigned_to.push(actor_id) // Does NOT validate actor exists
+  → if !goal.assigned_to.includes(actor_id): goal.assigned_to.push(actor_id)
   → storage.update("goal", goal_id, { assigned_to: goal.assigned_to })
   → { success: true, data: Goal }
 
-compose_task({ task_id, interaction_ids })
-  → storage.update("task", task_id, { composed_of: interaction_ids })
+unassign_goal_from_actor({ actor_id, goal_id })
+  → goal = storage.get("goal", goal_id)
+  → goal.assigned_to = goal.assigned_to.filter(id => id !== actor_id)
+  → storage.update("goal", goal_id, { assigned_to: goal.assigned_to })
+  → { success: true, data: Goal }
+
+// Task composition
+add_interaction_to_task({ task_id, interaction_id })
+  → task = storage.get("task", task_id)
+  → if !task.composed_of.includes(interaction_id): task.composed_of.push(interaction_id)
+  → storage.update("task", task_id, { composed_of: task.composed_of })
   → { success: true, data: Task }
 
+remove_interaction_from_task({ task_id, interaction_id })
+  → task = storage.get("task", task_id)
+  → task.composed_of = task.composed_of.filter(id => id !== interaction_id)
+  → storage.update("task", task_id, { composed_of: task.composed_of })
+  → { success: true, data: Task }
+
+// Journey tracking
 record_journey_step({ journey_id, task_id, outcome })
   → journey = storage.get("journey", journey_id)
   → journey.steps.push({ task_id, outcome, timestamp: now() })
   → storage.update("journey", journey_id, { steps: journey.steps })
   → { success: true, data: Journey }
+
+add_goal_to_journey({ journey_id, goal_id })
+  → journey = storage.get("journey", journey_id)
+  → if !journey.goal_ids.includes(goal_id): journey.goal_ids.push(goal_id)
+  → storage.update("journey", journey_id, { goal_ids: journey.goal_ids })
+  → { success: true, data: Journey }
+
+remove_goal_from_journey({ journey_id, goal_id })
+  → journey = storage.get("journey", journey_id)
+  → journey.goal_ids = journey.goal_ids.filter(id => id !== goal_id)
+  → storage.update("journey", journey_id, { goal_ids: journey.goal_ids })
+  → { success: true, data: Journey }
 ```
 
-### Query Tools (5)
+**Implementation notes:**
+- All tools are idempotent (safe to call multiple times)
+- Error if entity not found
+- No validation that referenced IDs exist (allows gaps)
+- Estimated effort: 4-6 hours
+
+**Status:** ❌ Not yet implemented - **BLOCKING REAL ENSEMBLE USAGE**
+
+---
+
+### Phase 3: Query Tools (5) - **NICE TO HAVE**
+
+These tools help agents analyze the model and surface insights during conversations:
 
 ```javascript
 find_actors_without_ability({ ability })
@@ -233,7 +299,13 @@ actor_can_achieve_goal({ actor_id, goal_id })
   → return { can_achieve: boolean, reason: string }
 ```
 
-### Visualization Tools (6)
+**Status:** ❌ Not yet implemented - useful for analysis but not blocking
+
+---
+
+### Phase 4: Visualization Tools (5) - **NICE TO HAVE**
+
+Specialized views for different analysis needs:
 
 ```javascript
 get_full_model()
@@ -256,6 +328,38 @@ get_recent_changes({ since_timestamp? })
   → Default since_timestamp = now() - 1 hour
   → Return changes from storage event log (store last 100 events in memory)
 ```
+
+**Status:** ✅ `get_full_model` implemented. Others ❌ not yet needed - can build with client-side logic if required.
+
+---
+
+## Implementation Roadmap
+
+### ✅ Phase 1 + 2: Complete (20 tools)
+- Electron app with D3 force-directed graph
+- MCP server with FastMCP on localhost:3000
+- Full CRUD for actors, goals, tasks, interactions, questions, journeys
+- Gap detection and real-time updates (<1s latency)
+- 5 test scenarios, 42 test steps, all passing
+
+### 🚧 Phase 2.5: Next Priority (7 tools, 4-6 hours)
+**Goal:** Natural conversation flows for ensemble sessions
+
+**Why:** Current tools require manual array management. Need idempotent composition tools that match natural language patterns like "assign this goal to Maria."
+
+**Tools to implement:**
+- `assign_goal_to_actor` / `unassign_goal_from_actor`
+- `add_interaction_to_task` / `remove_interaction_from_task`
+- `record_journey_step`
+- `add_goal_to_journey` / `remove_goal_from_journey`
+
+**Test:** Create `conversation-flow.ts` scenario mimicking real dialogue
+
+### 🔮 Phase 3-4: Future (as needed)
+- **Query Tools:** Add when teams ask "who can do X?" during sessions
+- **Visualization Tools:** Add specialized views based on usage feedback
+
+---
 
 ## Electron Implementation
 
@@ -441,7 +545,7 @@ function findGaps(model) {
 
 Note: Keep 90% of screen time on the Force Layout; add the other views in later phases once we have real usage data.
 
-## Phase 1: Walking Skeleton
+## Phase 1: Walking Skeleton ✅ COMPLETE
 
 **Acceptance Criteria (implemented):**
 
@@ -455,10 +559,55 @@ Note: Keep 90% of screen time on the Force Layout; add the other views in later 
    - `clear_model` clears all data for test cleanup.
 3. E2E test harness validates all tools and workflows, including complex scenarios like the bookkeeping system model.
 
-**Files Implemented:**
+**Phase 1 Complete:** All acceptance criteria met, ~800 lines of code, fully tested.
 
-```
-screenplay-visualizer/
+---
+
+## Phase 2: Full CRUD Operations ✅ COMPLETE
+
+**Acceptance Criteria (implemented):**
+
+1. All 6 entity types support full CRUD:
+   - **Create:** `define_actor`, `define_goal`, `define_task`, `define_interaction`, `define_question`, `define_journey`
+   - **Read:** `get_full_model` (returns all entity types)
+   - **Update:** `update_actor`, `update_goal`, `update_task`, `update_interaction`, `update_question`, `update_journey`
+   - **Delete:** `delete_actor`, `delete_goal`, `delete_task`, `delete_interaction`, `delete_question`, `delete_journey`
+
+2. Gap detection works for all relationship types:
+   - Goals referencing missing actors
+   - Tasks referencing missing interactions
+   - Journeys referencing missing actors, goals, or tasks
+
+3. Comprehensive test coverage:
+   - Extended bookkeeping scenario exercises all CRUD operations
+   - 31 test steps covering create, update, delete, and gap scenarios
+   - Tests validate cascading effects (e.g., deleting actor creates gaps)
+
+**Phase 2 Complete:** 20 tools total (was 5, added 15), ~1200 lines of code, all tests passing.
+
+---
+
+## Phase 2.5: Composition Tools 🚧 NEXT PRIORITY
+
+**Why:** Current CRUD tools require agents to manually manage arrays (e.g., reading all current goal assignments, appending a new ID, then updating). This doesn't match natural conversation patterns like "assign this goal to Maria."
+
+**Goal:** Enable agents to express relationships naturally without state management.
+
+**Acceptance Criteria:**
+
+1. Implement 7 composition tools that handle array manipulation internally
+2. Tools are idempotent (safe to call multiple times)
+3. Create "conversation-flow" test scenario that reads like natural dialogue
+4. Update bookkeeping-conversation.md to use composition tools
+5. Verify agent can process screenplay without manual array management
+
+**Status:** Not yet started - **BLOCKING REAL ENSEMBLE USAGE**
+
+---
+
+## Testing Strategy
+
+The application uses an automated E2E test harness that connects to the MCP server:
 ├── package.json
 ├── tsconfig.json
 ├── tsconfig.preload.json
@@ -501,18 +650,75 @@ The application uses an automated E2E test harness that connects to the MCP serv
 - **Test Scenarios**: Individual scenario files in `src/tests/scenarios/` validate each tool and workflow
 - **MCP Endpoint**: Running on `http://localhost:3000/mcp` using FastMCP's stateless HTTP streaming mode
 
+### Current Test Coverage (Phase 1 + 2)
+
 The test harness validates:
 - Tool execution and response format
 - Data model consistency
 - Gap detection and relationship handling
 - State persistence across operations
-- Complex workflows (e.g., the bookkeeping scenario with 4 actors, 6 goals, and gap evolution)
+- Complex workflows (e.g., the bookkeeping scenario with 4 actors, 6 goals, 3 tasks, 3 interactions, and gap evolution)
 
-**Adding New Tests**: Create new scenario files in `src/tests/scenarios/` following the ScenarioRunner pattern, then add them to `src/tests/run-all-scenarios.ts`.
+**Test Scenarios:**
+1. `define-actor.ts` - Actor creation (2 steps)
+2. `define-goal-assigned.ts` - Goal with valid actor (3 steps)
+3. `define-goal-gap.ts` - Goal with missing actor creates gap (2 steps)
+4. `delete-actor.ts` - Actor deletion creates gaps (4 steps)
+5. `bookkeeping-full-graph.ts` - Comprehensive CRUD scenario (31 steps)
 
-**Phase 2:** Expand test scenarios to cover all 32 tools with realistic data (3 actors, 5 goals, 10 tasks, 20 interactions).
+**Total:** 5 scenarios, 42 test steps, all passing ✅
 
-**Phase 3:** Connect Claude Code, run a real ensemble session with your team. Tune force layout parameters based on what feels good during conversation flow.
+### Phase 2.5 Testing Plan
+
+**Adding New Tests**:
+1. Create `conversation-flow.ts` scenario that mimics natural dialogue
+2. Use composition tools instead of update operations
+3. Test idempotency (calling same composition tool multiple times)
+4. Validate that screenplay processing feels natural
+
+Example test pattern:
+```typescript
+.step('Sarah assigns budget goal to herself', async () => {
+  await client.callTool('assign_goal_to_actor', {
+    actor_id: sarah.id,
+    goal_id: budgetGoal.id
+  });
+})
+.step('Sarah also gets monthly reporting (can call twice)', async () => {
+  await client.callTool('assign_goal_to_actor', {
+    actor_id: sarah.id,
+    goal_id: reportingGoal.id
+  });
+  // Call again to test idempotency
+  await client.callTool('assign_goal_to_actor', {
+    actor_id: sarah.id,
+    goal_id: reportingGoal.id
+  });
+})
+```
+
+---
+---
+
+## Current Project Status
+
+**What Works:**
+- ✅ Electron app with D3 force-directed graph visualization
+- ✅ MCP server on localhost:3000 with 20 tools
+- ✅ Real-time updates with <1s latency from tool call to visual change
+- ✅ Full CRUD for actors, goals, tasks, interactions, questions, journeys
+- ✅ Gap detection for missing references
+- ✅ Comprehensive test suite (42 steps, all passing)
+- ✅ Bookkeeping conversation screenplay documenting expected usage
+
+**What's Missing for Real Usage:**
+- ❌ Composition tools for natural conversation flow
+- ❌ "conversation-flow" test scenario
+- ❌ Query tools for analysis (nice to have, not blocking)
+
+**Recommendation:** Implement Phase 2.5 composition tools before using with real ensemble coding sessions. Current CRUD operations work but require too much state management for natural agent interaction.
+
+---
 
 ## What We're NOT Building
 
