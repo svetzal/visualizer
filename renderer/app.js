@@ -66,18 +66,18 @@ function setupSVG() {
   simulation = d3.forceSimulation()
     .force('link', d3.forceLink()
       .id(d => d.id)
-      .distance(80)        // Shorter links bring connected nodes closer
+      .distance(120)       // Increased for larger nodes
       .strength(1)         // Stronger links keep connections tight
     )
     .force('charge', d3.forceManyBody()
-      .strength(-150)      // Reduced repulsion (was -300) for tighter clusters
-      .distanceMax(250)    // Limit repulsion distance to keep graph compact
+      .strength(-200)      // Increased repulsion for larger nodes
+      .distanceMax(300)    // Limit repulsion distance to keep graph compact
     )
     .force('center', d3.forceCenter(width / 2, height / 2)
       .strength(0.05)      // Gentle centering to avoid overcrowding center
     )
     .force('collision', d3.forceCollide()
-      .radius(45)          // Slightly larger collision radius to prevent overlap
+      .radius(50)          // Larger collision radius for bigger nodes
       .strength(0.8)       // Strong collision to prevent node overlap
     )
     .force('x', d3.forceX(width / 2).strength(0.02))  // Gentle horizontal pull toward center
@@ -347,41 +347,131 @@ function renderNodes() {
           const node = d3.select(this);
 
           if (d.type === 'actor') {
+            // Larger circle to accommodate text
             node.append('circle')
               .attr('class', 'actor-node')
-              .attr('r', 20);
+              .attr('r', 40);
+
+            // Name inside circle with wrapping
+            const nameLines = wrapText(d.name, 70);
+            const nameGroup = node.append('g').attr('class', 'label-group');
+            const lineHeight = 14;
+            const startY = -5 - ((nameLines.length - 1) * lineHeight / 2);
+
+            nameLines.forEach((line, i) => {
+              nameGroup.append('text')
+                .attr('class', 'node-label-inside')
+                .attr('dy', startY + (i * lineHeight))
+                .text(line);
+            });
+
+            // Abilities below name
+            if (d.abilities && d.abilities.length > 0) {
+              node.append('text')
+                .attr('class', 'node-meta')
+                .attr('dy', 10 + (nameLines.length > 1 ? (nameLines.length - 1) * 7 : 0))
+                .text(`${d.abilities.length} abilities`);
+            }
+
           } else if (d.type === 'goal') {
+            // Larger rectangle to accommodate text
             node.append('rect')
               .attr('class', 'goal-node')
-              .attr('x', -15)
-              .attr('y', -15)
-              .attr('width', 30)
-              .attr('height', 30);
+              .attr('x', -50)
+              .attr('y', -30)
+              .attr('width', 100)
+              .attr('height', 60)
+              .attr('rx', 5);
+
+            // Name inside rectangle with wrapping
+            const nameLines = wrapText(d.name, 90);
+            const nameGroup = node.append('g').attr('class', 'label-group');
+            const lineHeight = 14;
+            const startY = -5 - ((nameLines.length - 1) * lineHeight / 2);
+
+            nameLines.forEach((line, i) => {
+              nameGroup.append('text')
+                .attr('class', 'node-label-inside')
+                .attr('dy', startY + (i * lineHeight))
+                .text(line);
+            });
+
+            // Assigned count or constraints
+            let metaText = '';
+            if (d.assigned_to && d.assigned_to.length > 0) {
+              metaText = `→ ${d.assigned_to.length} actors`;
+            }
+            if (d.constraints && d.constraints.length > 0) {
+              metaText += (metaText ? ' • ' : '') + `${d.constraints.length} constraints`;
+            }
+            if (metaText) {
+              node.append('text')
+                .attr('class', 'node-meta')
+                .attr('dy', 12 + (nameLines.length > 1 ? (nameLines.length - 1) * 7 : 0))
+                .text(metaText);
+            }
+
           } else if (d.type === 'task') {
+            // Larger triangle
             node.append('polygon')
               .attr('class', 'task-node')
-              .attr('points', '0,-15 13,15 -13,15');
+              .attr('points', '0,-30 26,30 -26,30');
+
+            // Name inside triangle with wrapping
+            const nameLines = wrapText(d.name, 40);
+            const nameGroup = node.append('g').attr('class', 'label-group');
+            const lineHeight = 14;
+            const startY = 0 - ((nameLines.length - 1) * lineHeight / 2);
+
+            nameLines.forEach((line, i) => {
+              nameGroup.append('text')
+                .attr('class', 'node-label-inside')
+                .attr('dy', startY + (i * lineHeight))
+                .text(line);
+            });
+
+            // Composition count
+            if (d.composed_of && d.composed_of.length > 0) {
+              node.append('text')
+                .attr('class', 'node-meta')
+                .attr('dy', 15 + (nameLines.length > 1 ? (nameLines.length - 1) * 7 : 0))
+                .text(`${d.composed_of.length} interactions`);
+            }
+
           } else if (d.type === 'interaction') {
+            // Larger diamond
             node.append('polygon')
               .attr('class', 'interaction-node')
-              .attr('points', '0,-15 15,0 0,15 -15,0');
+              .attr('points', '0,-35 35,0 0,35 -35,0');
+
+            // Name inside diamond with wrapping
+            const nameLines = wrapText(d.name, 55);
+            const nameGroup = node.append('g').attr('class', 'label-group');
+            const lineHeight = 14;
+            const startY = 5 - ((nameLines.length - 1) * lineHeight / 2);
+
+            nameLines.forEach((line, i) => {
+              nameGroup.append('text')
+                .attr('class', 'node-label-inside')
+                .attr('dy', startY + (i * lineHeight))
+                .text(line);
+            });
+
           } else if (d.type === 'gap') {
             node.append('circle')
               .attr('class', 'gap-node')
-              .attr('r', 15);
+              .attr('r', 30);
 
             node.append('text')
               .attr('class', 'gap-label')
-              .attr('dy', 8)
+              .attr('dy', -5)
               .text('?');
-          }
 
-          // Add label for non-gap nodes
-          if (d.type !== 'gap') {
+            // Show what type is missing
             node.append('text')
-              .attr('class', 'node-label')
-              .attr('dy', 45)
-              .text(d.name);
+              .attr('class', 'node-meta')
+              .attr('dy', 15)
+              .text(d.expected_type);
           }
         });
 
@@ -411,6 +501,38 @@ function ticked() {
 
   g.selectAll('.node')
     .attr('transform', d => `translate(${d.x},${d.y})`);
+}
+
+// Text wrapping utility
+function wrapText(text, maxWidth) {
+  const words = text.split(/\s+/);
+  const lines = [];
+  let currentLine = '';
+
+  // Create a temporary SVG text element to measure text width
+  const tempText = g.append('text')
+    .attr('class', 'node-label-inside')
+    .style('visibility', 'hidden');
+
+  words.forEach(word => {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    tempText.text(testLine);
+    const testWidth = tempText.node().getComputedTextLength();
+
+    if (testWidth > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  });
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  tempText.remove();
+  return lines;
 }
 
 // Drag behavior
@@ -460,14 +582,36 @@ function handleNodeClick(event, d) {
   } else {
     content = `<h3>${d.name}</h3>`;
     content += `<p><strong>Type:</strong> ${d.type}</p>`;
-    content += `<p><strong>Description:</strong> ${d.description}</p>`;
+    content += `<p><strong>Description:</strong> ${d.description || 'N/A'}</p>`;
 
     if (d.abilities && d.abilities.length > 0) {
       content += `<p><strong>Abilities:</strong></p><ul>${d.abilities.map(a => `<li>${a}</li>`).join('')}</ul>`;
     }
 
+    if (d.constraints && d.constraints.length > 0) {
+      content += `<p><strong>Constraints:</strong></p><ul>${d.constraints.map(c => `<li>${c}</li>`).join('')}</ul>`;
+    }
+
     if (d.success_criteria && d.success_criteria.length > 0) {
       content += `<p><strong>Success Criteria:</strong></p><ul>${d.success_criteria.map(s => `<li>${s}</li>`).join('')}</ul>`;
+    }
+
+    if (d.assigned_to && d.assigned_to.length > 0) {
+      content += `<p><strong>Assigned to:</strong></p><ul>`;
+      d.assigned_to.forEach(actorId => {
+        const actor = findEntityById(actorId);
+        content += `<li>${actor ? actor.name : actorId}</li>`;
+      });
+      content += `</ul>`;
+    }
+
+    if (d.composed_of && d.composed_of.length > 0) {
+      content += `<p><strong>Composed of:</strong></p><ul>`;
+      d.composed_of.forEach(interactionId => {
+        const interaction = findEntityById(interactionId);
+        content += `<li>${interaction ? interaction.name : interactionId}</li>`;
+      });
+      content += `</ul>`;
     }
   }
 
