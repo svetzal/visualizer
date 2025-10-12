@@ -1,10 +1,10 @@
 import { MCPClient, assert, uniqueName, newMissingUUID } from '../harness/mcp-client.js';
-import { ScenarioRunner, FullModel, Goal } from '../harness/runner.js';
+import { ScenarioRunner, FullModel, Goal, getHarnessOptions } from '../harness/runner.js';
 
 export default async function run(client: MCPClient) {
   const state: { goal?: Goal; missingId?: string } = {};
 
-  await new ScenarioRunner('Create a goal referencing a missing actor (standalone)')
+  await new ScenarioRunner('Create a goal referencing a missing actor (standalone)', getHarnessOptions())
     .step('define_goal with non-existent actor UUID', async () => {
       const missing = newMissingUUID();
       state.missingId = missing;

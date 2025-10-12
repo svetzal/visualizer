@@ -1,11 +1,11 @@
 import { MCPClient, assert, uniqueName } from '../harness/mcp-client.js';
-import { ScenarioRunner, FullModel, Actor } from '../harness/runner.js';
+import { ScenarioRunner, FullModel, Actor, getHarnessOptions } from '../harness/runner.js';
 
 export default async function run(client: MCPClient) {
   const actorName = uniqueName('Admin');
   const state: { actor?: Actor } = {};
 
-  await new ScenarioRunner('Create a new actor (standalone)')
+  await new ScenarioRunner('Create a new actor (standalone)', getHarnessOptions())
     .step('define_actor', async () => {
       const resp = await client.callTool<{ success: boolean; data: Actor }>('define_actor', {
         name: actorName,

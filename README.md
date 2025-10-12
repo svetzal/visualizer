@@ -55,6 +55,32 @@ This will:
 
 **Note:** The Electron app must be running (`npm start`) before running tests.
 
+#### Slow Mode for Visual Verification
+
+To watch the visualizer animations in real-time while tests run, use slow mode:
+
+```bash
+# Run with 2 second delay between steps (default)
+npm run test:e2e:slow
+
+# Or specify a custom delay in milliseconds
+npm run test:e2e -- --delay=3000
+
+# Or use environment variable
+STEP_DELAY=5000 npm run test:e2e
+```
+
+This adds a configurable delay between each test step, allowing you to:
+- Watch the animations execute
+- Verify the force layout updates correctly
+- Observe node transitions and edge changes
+- Debug visual issues
+
+The test output will indicate when slow mode is enabled:
+```
+🐢 Slow mode enabled: 2000ms delay between steps
+```
+
 ### Adding New Test Scenarios
 
 Create new test files in `src/tests/scenarios/` following this pattern:
