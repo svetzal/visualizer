@@ -37,7 +37,7 @@ This will:
 
 **Note:** The first time you run it, Electron may take a few moments to initialize. Look for the Screenplay Visualizer window to open.
 
-## Phase 1 Testing
+## Testing
 
 ### Automated E2E Tests
 
@@ -109,127 +109,36 @@ Then add it to `src/tests/run-all-scenarios.ts`.
 
 ### Manual Testing with MCP
 
-Test the MCP server directly using curl (requires the app to be running):
+The MCP server can be tested directly using the Model Context Protocol. The easiest way is to use Claude Desktop or another MCP client. For direct HTTP testing, you'll need to use the FastMCP httpStream protocol with JSON-RPC 2.0 envelopes.
 
-### 1. Create an Actor
+**Available Tools:**
+- `define_actor` - Create a new actor with abilities and constraints
+- `define_goal` - Create a goal with success criteria and priority
+- `delete_actor` - Delete an actor by ID
+- `get_full_model` - Retrieve all entities and computed gaps
+- `clear_model` - Clear all data (for testing)
 
-```bash
-curl -X POST http://localhost:3000/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "tools/call",
-    "params": {
-      "name": "define_actor",
-      "arguments": {
-        "name": "Admin",
-        "description": "System administrator",
-        "abilities": ["manage_users", "configure_system"],
-        "constraints": ["requires_authentication"]
-      }
-    }
-  }'
-```
+**Example workflow:**
+1. Create an actor → blue circle appears in visualization
+2. Create a goal assigned to that actor → green square appears with gray edge to actor
+3. Create a goal with a non-existent actor UUID → green square with red dashed edge to "?" gap node
+4. Delete the actor → actor fades out, edges become red dashed gap edges
+5. Get full model → returns all entities plus computed gaps
 
-**Expected Result:** A blue circle labeled "Admin" appears in the force layout within 1 second.
-
-### 2. Create a Goal
-
-First, copy the `id` from the actor response above (e.g., `abc-123-def`), then:
-
-```bash
-curl -X POST http://localhost:3000/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 2,
-    "method": "tools/call",
-    "params": {
-      "name": "define_goal",
-      "arguments": {
-        "name": "User Management",
-        "description": "Manage all users in the system",
-        "success_criteria": ["Users can be created", "Users can be deleted"],
-        "priority": "high",
-        "assigned_to": ["<ACTOR_ID_HERE>"]
-      }
-    }
-  }'
-```
-
-**Expected Result:** A green square labeled "User Management" appears, with a gray edge connecting it to the Admin actor.
-
-### 3. Create a Goal with Non-Existent Actor
-
-```bash
-curl -X POST http://localhost:3000/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 3,
-    "method": "tools/call",
-    "params": {
-      "name": "define_goal",
-      "arguments": {
-        "name": "Advanced Analytics",
-        "description": "Provide analytics dashboards",
-        "success_criteria": ["Dashboard loads in <2s"],
-        "priority": "medium",
-        "assigned_to": ["fake-actor-id-123"]
-      }
-    }
-  }'
-```
-
-**Expected Result:** A green square (goal) appears, with a dashed red edge connecting to a red dashed circle labeled "?" (gap node).
-
-### 4. Delete the Actor
-
-```bash
-curl -X POST http://localhost:3000/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 4,
-    "method": "tools/call",
-    "params": {
-      "name": "delete_actor",
-      "arguments": {
-        "id": "<ACTOR_ID_HERE>"
-      }
-    }
-  }'
-```
-
-**Expected Result:** The Admin actor fades out (300ms), the edge to "User Management" turns into a dashed red gap edge, and the goal remains.
-
-### 5. Get Full Model
-
-```bash
-curl -X POST http://localhost:3000/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 5,
-    "method": "tools/call",
-    "params": {
-      "name": "get_full_model",
-      "arguments": {}
-    }
-  }'
-```
-
-**Expected Result:** Returns JSON with all entities and computed gaps.
+All visualization updates appear within ~1 second of the tool call.
 
 ## Phase 1 Acceptance Criteria
 
 - [x] Electron starts and shows MCP server URL in header
 - [x] `define_actor` tool call creates a blue circle node
 - [x] `define_goal` tool call creates a green square node with edge to actor
-- [x] `delete_actor` removes actor and converts edge to gap (dashed red)
+- [x] `define_goal` with non-existent actor UUID creates gap node and red dashed edge
+- [x] `delete_actor` removes actor and converts edges to gaps (dashed red)
+- [x] `get_full_model` returns all entities and computed gaps
+- [x] `clear_model` clears all data for test cleanup
 - [x] All updates appear in visualization within 1 second
 - [x] Force layout keeps nodes properly spaced and readable
+- [x] E2E test harness validates all Phase 1 tools
 
 ## Visual Design
 
@@ -262,9 +171,15 @@ curl -X POST http://localhost:3000/mcp \
 
 ## Data Storage
 
-All entities are persisted to:
+All entities are persisted to platform-specific application data directories:
+
+**macOS:** `~/Library/Application Support/screenplay-visualizer/.screenplay/`
+**Linux:** `~/.config/screenplay-visualizer/.screenplay/`
+**Windows:** `%APPDATA%/screenplay-visualizer/.screenplay/`
+
+Files stored:
 ```
-~/.config/screenplay-visualizer/.screenplay/
+.screenplay/
 ├── actors.json
 ├── goals.json
 ├── tasks.json

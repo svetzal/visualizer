@@ -152,6 +152,15 @@ class JSONStorage extends EventEmitter {
 
 **Philosophy:** Tools are thin wrappers around storage. Validation happens in storage layer. Tools return immediately after emitting change event.
 
+**Phase 1 Implementation Status:**
+- ✅ `define_actor` - Create actors
+- ✅ `define_goal` - Create goals with assignments
+- ✅ `delete_actor` - Delete actors
+- ✅ `get_full_model` - Retrieve all entities and computed gaps
+- ✅ `clear_model` - Clear all data (for testing)
+
+**Phase 2+ Planned Tools:**
+
 ### CRUD Tools (18 total)
 
 **Creation Pattern:**
@@ -437,46 +446,59 @@ Note: Keep 90% of screen time on the Force Layout; add the other views in later 
 **Acceptance Criteria (implemented):**
 
 1. Electron starts and shows the MCP server URL in the header (e.g., http://localhost:3000/mcp).
-2. Using the simple test API on http://localhost:3001:
-   - POST /test/define_actor creates an actor; a blue circle appears within ~1s.
-   - POST /test/define_goal with assigned_to including the actor ID creates a goal; a green square appears with a gray edge to the actor.
-   - POST /test/define_goal with a fake actor ID creates a gap; the goal shows a red dashed edge to a red dashed "?" node.
-   - POST /test/delete_actor removes the actor; the edge to any assigned goals turns into a red dashed gap edge while goals remain.
-3. Using the MCP server on http://localhost:3000/mcp with FastMCP httpStream JSON-RPC envelopes (see README and test-mcp.sh), define_actor/define_goal/delete_actor/get_full_model work and drive the same visualization updates.
+2. Using the MCP server on http://localhost:3000/mcp with FastMCP httpStream JSON-RPC envelopes:
+   - `define_actor` creates an actor; a blue circle appears within ~1s.
+   - `define_goal` with assigned_to including a valid actor UUID creates a goal; a green square appears with a gray edge to the actor.
+   - `define_goal` with a non-existent actor UUID creates a gap; the goal shows a red dashed edge to a red dashed "?" node.
+   - `delete_actor` removes the actor; edges to any assigned goals turn into red dashed gap edges while goals remain.
+   - `get_full_model` returns all entities plus computed gaps.
+   - `clear_model` clears all data for test cleanup.
+3. E2E test harness validates all tools and workflows, including complex scenarios like the bookkeeping system model.
 
-**Files to Create:**
+**Files Implemented:**
 
 ```
 screenplay-visualizer/
 ├── package.json
+├── tsconfig.json
+├── tsconfig.preload.json
 ├── src/
-│   ├── main.ts                 # Electron main process (creates window, storage, servers, IPC)
+│   ├── bootstrap.ts            # Entry point
+│   ├── main.ts                 # Electron main process (window, storage, MCP server, IPC)
 │   ├── preload.ts              # IPC bridge exposing getModel + event hooks
 │   ├── lib/
 │   │   ├── schemas.ts          # Zod schemas and TS types for entities
 │   │   └── storage.ts          # JSONStorage with atomic writes and change events
-│   └── mcp-server/
-│       ├── tools.ts            # define_actor, define_goal, delete_actor, get_full_model
-│       └── test-endpoint.ts    # simple HTTP test API on :3001
+│   ├── mcp-server/
+│   │   └── tools.ts            # Phase 1 tools (define_actor, define_goal, delete_actor, get_full_model, clear_model)
+│   └── tests/
+│       ├── run-all-scenarios.ts        # Test runner with slow mode support
+│       ├── harness/
+│       │   ├── mcp-client.ts           # MCP SDK client wrapper
+│       │   └── runner.ts               # ScenarioRunner framework
+│       └── scenarios/
+│           ├── define-actor.ts         # Actor creation test
+│           ├── define-goal-assigned.ts # Goal with valid actor test
+│           ├── define-goal-gap.ts      # Goal with missing actor test
+│           ├── delete-actor.ts         # Actor deletion and gap creation test
+│           └── bookkeeping-full-graph.ts # Complex end-to-end scenario
 ├── renderer/
-│   ├── index.html
+│   ├── index.html              # UI structure with header and force layout
 │   ├── app.js                  # D3 force layout + IPC handling
-│   └── styles.css
-├── dist/                       # Compiled JS output (build step)
-├── test-mcp.sh                 # JSON-RPC examples for :3000/mcp
-├── test-simple.sh              # Simple :3001/test walkthrough
-└── test-phase1.sh              # Acceptance flow using :3001/test
+│   └── styles.css              # Projection-ready styles
+└── dist/                       # Compiled JS output (build step)
 ```
 
-**Phase 1 Code Volume:** ~800 lines total. Should take 2-3 hours with Claude Code.
+**Phase 1 Complete:** All acceptance criteria met, ~800 lines of code, fully tested.
 
 ## Testing Strategy
 
 The application uses an automated E2E test harness that connects to the MCP server:
 
 - **E2E Tests**: Run `npm run test:e2e` to execute all test scenarios against the MCP server
+- **Slow Mode**: Run `npm run test:e2e:slow` to add delays between steps for visual verification
 - **Test Framework**: Located in `src/tests/`, uses the official MCP SDK client (`@modelcontextprotocol/sdk`)
-- **Adding Tests**: Create new scenario files in `src/tests/scenarios/` following the existing patterns
+- **Test Scenarios**: Individual scenario files in `src/tests/scenarios/` validate each tool and workflow
 - **MCP Endpoint**: Running on `http://localhost:3000/mcp` using FastMCP's stateless HTTP streaming mode
 
 The test harness validates:
@@ -484,6 +506,9 @@ The test harness validates:
 - Data model consistency
 - Gap detection and relationship handling
 - State persistence across operations
+- Complex workflows (e.g., the bookkeeping scenario with 4 actors, 6 goals, and gap evolution)
+
+**Adding New Tests**: Create new scenario files in `src/tests/scenarios/` following the ScenarioRunner pattern, then add them to `src/tests/run-all-scenarios.ts`.
 
 **Phase 2:** Expand test scenarios to cover all 32 tools with realistic data (3 actors, 5 goals, 10 tasks, 20 interactions).
 
