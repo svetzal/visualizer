@@ -12,15 +12,24 @@ import {
 } from '../lib/queries.js';
 
 export function registerTools(server: FastMCP, storage: JSONStorage): void {
+  // ============================================================
+  // SCREENPLAY PATTERN TOOLS
+  //
+  // Use these tools to model BDD-style software features using the Screenplay Pattern.
+  // Work through phases: 1) Define Actors (who), 2) Define Goals (what),
+  // 3) Define Tasks & Interactions (how), 4) Create Journeys (validation).
+  // Gaps (missing references) are FEATURES - they help teams discover what hasn't been discussed yet.
+  // ============================================================
+
   // Tool: define_actor
   server.addTool({
     name: 'define_actor',
-    description: 'Create a new actor with abilities and constraints',
+    description: 'Define a person, system, or service that participates in the software system. Use this when the user mentions a role, persona, external system, or service. Actors have abilities (what they can do) and constraints (what prevents them from doing things). Start every modeling session by defining actors first.',
     parameters: z.object({
-      name: z.string().describe('Human-readable name for the actor'),
-      description: z.string().describe('Free text description'),
-      abilities: z.array(z.string()).describe('What the actor can do'),
-      constraints: z.array(z.string()).describe('What prevents the actor from doing things'),
+      name: z.string().describe('Display name (e.g., "Product Owner", "Payment Gateway", "Mobile App User")'),
+      description: z.string().describe('Detailed context about this actor\'s role, responsibilities, or technical nature'),
+      abilities: z.array(z.string()).describe('List of capabilities this actor possesses (e.g., ["view_dashboard", "approve_orders", "send_notifications"]). These must match abilities required by tasks.'),
+      constraints: z.array(z.string()).describe('Limitations or restrictions (e.g., ["cannot access production database", "rate limited to 100 requests/minute", "only works during business hours"])'),
     }),
     execute: async (args) => {
       const now = new Date().toISOString();
@@ -43,13 +52,13 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_goal
   server.addTool({
     name: 'define_goal',
-    description: 'Create a new goal with success criteria and priority',
+    description: 'Define a desired outcome or objective that actors pursue. Use this when the user describes features, user stories, business objectives, or system capabilities. Goals should be outcome-focused (not implementation-focused). Each goal gets assigned to one or more actors who have the abilities to achieve it.',
     parameters: z.object({
-      name: z.string().describe('Human-readable name for the goal'),
-      description: z.string().describe('Free text description'),
-      success_criteria: z.array(z.string()).describe('How to know when goal is achieved'),
-      priority: z.enum(['low', 'medium', 'high']).describe('Priority level'),
-      assigned_to: z.array(z.string().uuid()).optional().default([]).describe('Actor IDs (may reference non-existent actors)'),
+      name: z.string().describe('Outcome-focused name (e.g., "Complete Purchase", "Generate Monthly Report", "Onboard New User")'),
+      description: z.string().describe('Detailed explanation of what achieving this goal means and why it matters'),
+      success_criteria: z.array(z.string()).describe('Observable, testable conditions that prove the goal is achieved (e.g., ["payment confirmed", "receipt emailed", "inventory updated"])'),
+      priority: z.enum(['low', 'medium', 'high']).describe('Business priority - use "high" for must-haves, "medium" for important features, "low" for nice-to-haves'),
+      assigned_to: z.array(z.string().uuid()).optional().default([]).describe('Array of actor IDs who can pursue this goal. Referencing non-existent actors creates visible gaps (red "?" nodes) - this is intentional to surface missing discussions.'),
     }),
     execute: async (args) => {
       const now = new Date().toISOString();
@@ -73,9 +82,9 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: delete_actor
   server.addTool({
     name: 'delete_actor',
-    description: 'Delete an actor by ID',
+    description: 'Remove an actor from the model. Use this when an actor is no longer relevant or was created by mistake. Note: Deleting an actor will create gaps in any goals/journeys that reference it.',
     parameters: z.object({
-      id: z.string().uuid().describe('The actor ID to delete'),
+      id: z.string().uuid().describe('UUID of the actor to remove (obtain from get_full_model or previous create/update operations)'),
     }),
     execute: async (args) => {
       await storage.delete('actor', args.id);
@@ -87,7 +96,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: get_full_model
   server.addTool({
     name: 'get_full_model',
-    description: 'Retrieve the complete model including all entities and computed gaps',
+    description: 'Retrieve the entire screenplay model including all actors, goals, tasks, interactions, questions, journeys, and computed gaps. Use this at the start of a session to understand what has already been discussed, or periodically to check the current state. Gaps indicate missing entities that are referenced but not yet defined - these are conversation prompts, not errors.',
     parameters: z.object({}),
     execute: async () => {
       const actors = await storage.getAll('actor');
@@ -115,7 +124,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: clear_model
   server.addTool({
     name: 'clear_model',
-    description: 'Clear all data from the model (for testing purposes)',
+    description: 'Delete all data from the model and start fresh. Use this only when explicitly requested by the user or when starting a completely new modeling session. This cannot be undone.',
     parameters: z.object({}),
     execute: async () => {
       await storage.clear();
@@ -123,18 +132,21 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
     },
   });
 
-  // ========== Phase 2: CRUD Tools ==========
+  // ============================================================
+  // CRUD TOOLS - Update and Delete Operations
+  // Use these to refine the model as the team's understanding evolves.
+  // ============================================================
 
   // Tool: update_actor
   server.addTool({
     name: 'update_actor',
-    description: 'Update an existing actor',
+    description: 'Modify an existing actor\'s properties. Use this when the team refines their understanding of an actor\'s capabilities, adds new abilities, or clarifies constraints. All fields are optional - only provide fields that need to change.',
     parameters: z.object({
-      id: z.string().uuid().describe('The actor ID to update'),
-      name: z.string().optional().describe('Updated name'),
-      description: z.string().optional().describe('Updated description'),
-      abilities: z.array(z.string()).optional().describe('Updated abilities'),
-      constraints: z.array(z.string()).optional().describe('Updated constraints'),
+      id: z.string().uuid().describe('UUID of the actor to update'),
+      name: z.string().optional().describe('New display name (if changing)'),
+      description: z.string().optional().describe('Updated description (if adding context)'),
+      abilities: z.array(z.string()).optional().describe('Replacement abilities array (not merged - provide complete new list if changing)'),
+      constraints: z.array(z.string()).optional().describe('Replacement constraints array (not merged - provide complete new list if changing)'),
     }),
     execute: async (args) => {
       const { id, ...updates } = args;
@@ -146,13 +158,13 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_task
   server.addTool({
     name: 'define_task',
-    description: 'Create a new task with required abilities',
+    description: 'Define a concrete activity that actors perform to achieve goals. Tasks are the "how" - they decompose goals into actionable steps. Use this when discussing specific actions, workflows, or procedures. Tasks require specific abilities (which actors must have) and are composed of lower-level interactions.',
     parameters: z.object({
-      name: z.string().describe('Human-readable name for the task'),
-      description: z.string().describe('Free text description'),
-      required_abilities: z.array(z.string()).describe('Abilities needed to perform this task'),
-      composed_of: z.array(z.string().uuid()).optional().default([]).describe('Interaction IDs (may reference non-existent interactions)'),
-      goal_ids: z.array(z.string().uuid()).optional().default([]).describe('Goal IDs this task helps achieve (may reference non-existent goals)'),
+      name: z.string().describe('Action-oriented name (e.g., "Submit Order", "Validate Payment", "Send Confirmation Email")'),
+      description: z.string().describe('Detailed explanation of what happens during this task, including any business rules or technical steps'),
+      required_abilities: z.array(z.string()).describe('Abilities an actor must possess to perform this task (e.g., ["access_database", "send_email"]). These must match abilities defined on actors.'),
+      composed_of: z.array(z.string().uuid()).optional().default([]).describe('Array of interaction IDs that make up this task. Referencing non-existent interactions creates gaps - useful for progressive decomposition.'),
+      goal_ids: z.array(z.string().uuid()).optional().default([]).describe('Array of goal IDs that this task helps achieve. Links tasks to higher-level objectives.'),
     }),
     execute: async (args) => {
       const now = new Date().toISOString();
@@ -175,14 +187,14 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: update_task
   server.addTool({
     name: 'update_task',
-    description: 'Update an existing task',
+    description: 'Modify an existing task. Use this to refine task descriptions, adjust required abilities, add/remove interactions, or link to additional goals as understanding evolves.',
     parameters: z.object({
-      id: z.string().uuid().describe('The task ID to update'),
-      name: z.string().optional().describe('Updated name'),
-      description: z.string().optional().describe('Updated description'),
-      required_abilities: z.array(z.string()).optional().describe('Updated required abilities'),
-      composed_of: z.array(z.string().uuid()).optional().describe('Updated interaction IDs'),
-      goal_ids: z.array(z.string().uuid()).optional().describe('Updated goal IDs'),
+      id: z.string().uuid().describe('UUID of the task to update'),
+      name: z.string().optional().describe('New name (if changing)'),
+      description: z.string().optional().describe('Updated description (if adding clarity)'),
+      required_abilities: z.array(z.string()).optional().describe('Replacement abilities array (provide complete new list if changing)'),
+      composed_of: z.array(z.string().uuid()).optional().describe('Replacement interaction IDs array (provide complete new list if changing)'),
+      goal_ids: z.array(z.string().uuid()).optional().describe('Replacement goal IDs array (provide complete new list if changing)'),
     }),
     execute: async (args) => {
       const { id, ...updates } = args;
@@ -194,9 +206,9 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: delete_task
   server.addTool({
     name: 'delete_task',
-    description: 'Delete a task by ID',
+    description: 'Remove a task from the model. Use when a task is no longer relevant or was created by mistake. Deleting a task will create gaps in journeys that reference it.',
     parameters: z.object({
-      id: z.string().uuid().describe('The task ID to delete'),
+      id: z.string().uuid().describe('UUID of the task to remove'),
     }),
     execute: async (args) => {
       await storage.delete('task', args.id);
@@ -207,12 +219,12 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_interaction
   server.addTool({
     name: 'define_interaction',
-    description: 'Create a new interaction with preconditions and effects',
+    description: 'Define a low-level system interaction - the atomic operations that tasks are composed of. Use this for API calls, database operations, UI actions, or any technical step that changes system state. Interactions have preconditions (what must be true first) and effects (what changes as a result).',
     parameters: z.object({
-      name: z.string().describe('Human-readable name for the interaction'),
-      description: z.string().describe('Free text description'),
-      preconditions: z.array(z.string()).describe('Conditions that must be true before this interaction'),
-      effects: z.array(z.string()).describe('Changes that result from this interaction'),
+      name: z.string().describe('Technical name for the operation (e.g., "POST /api/orders", "Query UserTable", "Click Submit Button")'),
+      description: z.string().describe('Technical details about this interaction, including protocols, data formats, or UI specifics'),
+      preconditions: z.array(z.string()).describe('Conditions that must be true before this interaction can execute (e.g., ["user authenticated", "cart not empty", "payment token valid"])'),
+      effects: z.array(z.string()).describe('State changes that result from this interaction (e.g., ["order created in database", "inventory decremented", "confirmation email queued"])'),
     }),
     execute: async (args) => {
       const now = new Date().toISOString();
@@ -234,13 +246,13 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: update_interaction
   server.addTool({
     name: 'update_interaction',
-    description: 'Update an existing interaction',
+    description: 'Modify an existing interaction. Use this to refine technical details, add preconditions, or update effects as implementation understanding improves.',
     parameters: z.object({
-      id: z.string().uuid().describe('The interaction ID to update'),
-      name: z.string().optional().describe('Updated name'),
-      description: z.string().optional().describe('Updated description'),
-      preconditions: z.array(z.string()).optional().describe('Updated preconditions'),
-      effects: z.array(z.string()).optional().describe('Updated effects'),
+      id: z.string().uuid().describe('UUID of the interaction to update'),
+      name: z.string().optional().describe('New name (if changing)'),
+      description: z.string().optional().describe('Updated description (if adding technical details)'),
+      preconditions: z.array(z.string()).optional().describe('Replacement preconditions array (provide complete new list if changing)'),
+      effects: z.array(z.string()).optional().describe('Replacement effects array (provide complete new list if changing)'),
     }),
     execute: async (args) => {
       const { id, ...updates } = args;
@@ -252,9 +264,9 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: delete_interaction
   server.addTool({
     name: 'delete_interaction',
-    description: 'Delete an interaction by ID',
+    description: 'Remove an interaction from the model. Use when an interaction is obsolete or was created by mistake. Deleting an interaction will create gaps in tasks that reference it.',
     parameters: z.object({
-      id: z.string().uuid().describe('The interaction ID to delete'),
+      id: z.string().uuid().describe('UUID of the interaction to remove'),
     }),
     execute: async (args) => {
       await storage.delete('interaction', args.id);
@@ -265,14 +277,14 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: update_goal
   server.addTool({
     name: 'update_goal',
-    description: 'Update an existing goal',
+    description: 'Modify an existing goal. Use this to adjust priorities, refine success criteria, reassign actors, or clarify descriptions as requirements evolve.',
     parameters: z.object({
-      id: z.string().uuid().describe('The goal ID to update'),
-      name: z.string().optional().describe('Updated name'),
-      description: z.string().optional().describe('Updated description'),
-      success_criteria: z.array(z.string()).optional().describe('Updated success criteria'),
-      priority: z.enum(['low', 'medium', 'high']).optional().describe('Updated priority'),
-      assigned_to: z.array(z.string().uuid()).optional().describe('Updated actor assignments'),
+      id: z.string().uuid().describe('UUID of the goal to update'),
+      name: z.string().optional().describe('New name (if changing)'),
+      description: z.string().optional().describe('Updated description (if clarifying)'),
+      success_criteria: z.array(z.string()).optional().describe('Replacement success criteria array (provide complete new list if changing)'),
+      priority: z.enum(['low', 'medium', 'high']).optional().describe('New priority level (if reprioritizing)'),
+      assigned_to: z.array(z.string().uuid()).optional().describe('Replacement actor assignments array (provide complete new list if changing)'),
     }),
     execute: async (args) => {
       const { id, ...updates } = args;
@@ -284,9 +296,9 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: delete_goal
   server.addTool({
     name: 'delete_goal',
-    description: 'Delete a goal by ID',
+    description: 'Remove a goal from the model. Use when a goal is descoped, obsolete, or was created by mistake. Deleting a goal will create gaps in journeys that reference it.',
     parameters: z.object({
-      id: z.string().uuid().describe('The goal ID to delete'),
+      id: z.string().uuid().describe('UUID of the goal to remove'),
     }),
     execute: async (args) => {
       await storage.delete('goal', args.id);
@@ -297,11 +309,11 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_question
   server.addTool({
     name: 'define_question',
-    description: 'Create a new question about system state',
+    description: 'Define a question that actors need to ask about system state. Use this when discussing queries, reports, dashboards, or any information retrieval need. Questions represent read-only operations that don\'t change state but provide visibility.',
     parameters: z.object({
-      name: z.string().describe('Human-readable name for the question'),
-      description: z.string().describe('Free text description'),
-      asks_about: z.string().describe('What system state this queries'),
+      name: z.string().describe('Query-focused name (e.g., "What is my order status?", "How many items in stock?", "Who approved this request?")'),
+      description: z.string().describe('Detailed explanation of why this question matters, who asks it, and when it\'s asked'),
+      asks_about: z.string().describe('The system state or data being queried (e.g., "order status and tracking information", "current inventory levels", "approval workflow history")'),
     }),
     execute: async (args) => {
       const now = new Date().toISOString();
@@ -322,12 +334,12 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: update_question
   server.addTool({
     name: 'update_question',
-    description: 'Update an existing question',
+    description: 'Modify an existing question. Use this to refine the query, clarify what\'s being asked about, or update the description as data requirements are better understood.',
     parameters: z.object({
-      id: z.string().uuid().describe('The question ID to update'),
-      name: z.string().optional().describe('Updated name'),
-      description: z.string().optional().describe('Updated description'),
-      asks_about: z.string().optional().describe('Updated system state query'),
+      id: z.string().uuid().describe('UUID of the question to update'),
+      name: z.string().optional().describe('New question text (if rewording)'),
+      description: z.string().optional().describe('Updated description (if adding context)'),
+      asks_about: z.string().optional().describe('Updated system state description (if clarifying data needs)'),
     }),
     execute: async (args) => {
       const { id, ...updates } = args;
@@ -339,9 +351,9 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: delete_question
   server.addTool({
     name: 'delete_question',
-    description: 'Delete a question by ID',
+    description: 'Remove a question from the model. Use when a question is no longer needed or was created by mistake.',
     parameters: z.object({
-      id: z.string().uuid().describe('The question ID to delete'),
+      id: z.string().uuid().describe('UUID of the question to remove'),
     }),
     execute: async (args) => {
       await storage.delete('question', args.id);
@@ -352,12 +364,12 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_journey
   server.addTool({
     name: 'define_journey',
-    description: 'Create a new journey for an actor pursuing goals',
+    description: 'Define an end-to-end scenario where an actor pursues one or more goals through a sequence of tasks. Journeys are like test scenarios or user flows - they validate that the model is complete and coherent. Use this to model user stories, test cases, or business processes. Journeys help discover missing tasks and interactions.',
     parameters: z.object({
-      name: z.string().describe('Human-readable name for the journey'),
-      description: z.string().describe('Free text description'),
-      actor_id: z.string().uuid().describe('Actor ID (may reference non-existent actor)'),
-      goal_ids: z.array(z.string().uuid()).describe('Goal IDs (may reference non-existent goals)'),
+      name: z.string().describe('Scenario name (e.g., "First-Time User Makes Purchase", "Admin Generates Monthly Report", "Customer Tracks Shipment")'),
+      description: z.string().describe('Narrative description of this scenario, including context, triggers, and expected outcomes'),
+      actor_id: z.string().uuid().describe('UUID of the actor performing this journey. Referencing non-existent actor creates a gap - useful for discovering missing actors.'),
+      goal_ids: z.array(z.string().uuid()).describe('Array of goal IDs this journey aims to achieve. Typically 1-3 related goals. Referencing non-existent goals creates gaps.'),
     }),
     execute: async (args) => {
       const now = new Date().toISOString();
@@ -380,13 +392,13 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: update_journey
   server.addTool({
     name: 'update_journey',
-    description: 'Update an existing journey',
+    description: 'Modify an existing journey. Use this to change the actor, adjust goals, or refine the scenario description. Note: use record_journey_step to add steps, not this tool.',
     parameters: z.object({
-      id: z.string().uuid().describe('The journey ID to update'),
-      name: z.string().optional().describe('Updated name'),
-      description: z.string().optional().describe('Updated description'),
-      actor_id: z.string().uuid().optional().describe('Updated actor ID'),
-      goal_ids: z.array(z.string().uuid()).optional().describe('Updated goal IDs'),
+      id: z.string().uuid().describe('UUID of the journey to update'),
+      name: z.string().optional().describe('New scenario name (if changing)'),
+      description: z.string().optional().describe('Updated narrative (if adding context)'),
+      actor_id: z.string().uuid().optional().describe('New actor ID (if changing who performs this journey)'),
+      goal_ids: z.array(z.string().uuid()).optional().describe('Replacement goal IDs array (provide complete new list if changing)'),
     }),
     execute: async (args) => {
       const { id, ...updates } = args;
@@ -398,9 +410,9 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: delete_journey
   server.addTool({
     name: 'delete_journey',
-    description: 'Delete a journey by ID',
+    description: 'Remove a journey from the model. Use when a scenario is no longer relevant or was created by mistake.',
     parameters: z.object({
-      id: z.string().uuid().describe('The journey ID to delete'),
+      id: z.string().uuid().describe('UUID of the journey to remove'),
     }),
     execute: async (args) => {
       await storage.delete('journey', args.id);
@@ -409,16 +421,18 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   });
 
   // ============================================================
-  // Phase 2.5: Composition Tools (7 tools)
+  // COMPOSITION TOOLS - Build Relationships Between Entities
+  // These tools manage the connections between actors, goals, tasks,
+  // interactions, and journeys. All are idempotent (safe to call multiple times).
   // ============================================================
 
   // Tool: assign_goal_to_actor
   server.addTool({
     name: 'assign_goal_to_actor',
-    description: 'Assign a goal to an actor (idempotent)',
+    description: 'Assign a goal to an actor, indicating this actor has the abilities needed to achieve this goal. Use this after defining actors and goals to build responsibility relationships. Idempotent - safe to call multiple times with same IDs.',
     parameters: z.object({
-      actor_id: z.string().uuid().describe('Actor UUID'),
-      goal_id: z.string().uuid().describe('Goal UUID'),
+      actor_id: z.string().uuid().describe('UUID of the actor who will pursue this goal'),
+      goal_id: z.string().uuid().describe('UUID of the goal to assign'),
     }),
     execute: async (args) => {
       const goal = await storage.get('goal', args.goal_id) as Goal | null;
@@ -439,10 +453,10 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: unassign_goal_from_actor
   server.addTool({
     name: 'unassign_goal_from_actor',
-    description: 'Unassign a goal from an actor (idempotent)',
+    description: 'Remove a goal assignment from an actor. Use this when an actor should no longer be responsible for a goal, or when correcting an incorrect assignment. Idempotent - safe to call even if not currently assigned.',
     parameters: z.object({
-      actor_id: z.string().uuid().describe('Actor UUID'),
-      goal_id: z.string().uuid().describe('Goal UUID'),
+      actor_id: z.string().uuid().describe('UUID of the actor to remove from this goal'),
+      goal_id: z.string().uuid().describe('UUID of the goal to unassign'),
     }),
     execute: async (args) => {
       const goal = await storage.get('goal', args.goal_id) as Goal | null;
@@ -460,10 +474,10 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: add_interaction_to_task
   server.addTool({
     name: 'add_interaction_to_task',
-    description: 'Add an interaction to a task composition (idempotent)',
+    description: 'Add an interaction as a component of a task, building the task\'s implementation detail. Use this to decompose high-level tasks into low-level technical operations. Idempotent - safe to call multiple times.',
     parameters: z.object({
-      task_id: z.string().uuid().describe('Task UUID'),
-      interaction_id: z.string().uuid().describe('Interaction UUID'),
+      task_id: z.string().uuid().describe('UUID of the task being composed'),
+      interaction_id: z.string().uuid().describe('UUID of the interaction to add as a component'),
     }),
     execute: async (args) => {
       const task = await storage.get('task', args.task_id) as Task | null;
@@ -484,10 +498,10 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: remove_interaction_from_task
   server.addTool({
     name: 'remove_interaction_from_task',
-    description: 'Remove an interaction from a task composition (idempotent)',
+    description: 'Remove an interaction from a task\'s composition. Use this when an interaction is no longer part of the task, or when correcting an incorrect composition. Idempotent - safe to call even if not currently composed.',
     parameters: z.object({
-      task_id: z.string().uuid().describe('Task UUID'),
-      interaction_id: z.string().uuid().describe('Interaction UUID'),
+      task_id: z.string().uuid().describe('UUID of the task to modify'),
+      interaction_id: z.string().uuid().describe('UUID of the interaction to remove'),
     }),
     execute: async (args) => {
       const task = await storage.get('task', args.task_id) as Task | null;
@@ -505,11 +519,11 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: record_journey_step
   server.addTool({
     name: 'record_journey_step',
-    description: 'Record a new step in a journey (append-only)',
+    description: 'Add a task execution step to a journey\'s timeline. Use this to build the sequence of tasks an actor performs during a scenario. Steps are append-only (creating a timeline) and include outcomes. This helps validate that journeys are feasible and complete.',
     parameters: z.object({
-      journey_id: z.string().uuid().describe('Journey UUID'),
-      task_id: z.string().uuid().describe('Task UUID'),
-      outcome: z.enum(['success', 'failure', 'blocked']).describe('Outcome of the task'),
+      journey_id: z.string().uuid().describe('UUID of the journey being executed'),
+      task_id: z.string().uuid().describe('UUID of the task being performed in this step'),
+      outcome: z.enum(['success', 'failure', 'blocked']).describe('Result of executing this task: "success" = task completed, "failure" = task attempted but failed, "blocked" = task couldn\'t be attempted due to missing preconditions'),
     }),
     execute: async (args) => {
       const journey = await storage.get('journey', args.journey_id) as Journey | null;
@@ -531,10 +545,10 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: add_goal_to_journey
   server.addTool({
     name: 'add_goal_to_journey',
-    description: 'Add a goal to a journey (idempotent)',
+    description: 'Add an additional goal to an existing journey. Use this when a journey pursues multiple related goals, or when refining a journey\'s scope. Idempotent - safe to call multiple times.',
     parameters: z.object({
-      journey_id: z.string().uuid().describe('Journey UUID'),
-      goal_id: z.string().uuid().describe('Goal UUID'),
+      journey_id: z.string().uuid().describe('UUID of the journey to modify'),
+      goal_id: z.string().uuid().describe('UUID of the goal to add'),
     }),
     execute: async (args) => {
       const journey = await storage.get('journey', args.journey_id) as Journey | null;
@@ -555,10 +569,10 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: remove_goal_from_journey
   server.addTool({
     name: 'remove_goal_from_journey',
-    description: 'Remove a goal from a journey (idempotent)',
+    description: 'Remove a goal from a journey\'s scope. Use this when narrowing a journey\'s focus or correcting an incorrect goal association. Idempotent - safe to call even if not currently associated.',
     parameters: z.object({
-      journey_id: z.string().uuid().describe('Journey UUID'),
-      goal_id: z.string().uuid().describe('Goal UUID'),
+      journey_id: z.string().uuid().describe('UUID of the journey to modify'),
+      goal_id: z.string().uuid().describe('UUID of the goal to remove'),
     }),
     execute: async (args) => {
       const journey = await storage.get('journey', args.journey_id) as Journey | null;
@@ -574,15 +588,17 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   });
 
   // ============================================================
-  // Phase 3: Query/Analytical Tools (5 tools)
+  // ANALYTICAL TOOLS - Discover Issues and Validate Completeness
+  // Use these tools to find problems, gaps, and inconsistencies in the model.
+  // Run these periodically to guide the conversation toward missing details.
   // ============================================================
 
   // Tool: find_actors_without_ability
   server.addTool({
     name: 'find_actors_without_ability',
-    description: 'Find actors that lack a specific ability',
+    description: 'Identify all actors that do NOT have a specific ability. Use this to find who cannot perform certain tasks, helping validate actor definitions and discover capability gaps. Useful when discussing constraints or limitations.',
     parameters: z.object({
-      ability: z.string().describe('The ability to check for (e.g., "deploy", "write_code")'),
+      ability: z.string().describe('The ability to check for (must match ability strings exactly, e.g., "deploy_to_production", "access_customer_data", "send_notifications")'),
     }),
     execute: async (args) => {
       const actors = await storage.getAll('actor');
@@ -594,7 +610,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: find_tasks_without_interactions
   server.addTool({
     name: 'find_tasks_without_interactions',
-    description: 'Find tasks that have no interactions defined (empty tasks needing decomposition)',
+    description: 'Find all tasks that have empty interaction lists - these are high-level tasks that haven\'t been decomposed yet. Use this to identify where more technical detail is needed. These tasks appear complete at the goal level but lack implementation specifics.',
     parameters: z.object({}),
     execute: async () => {
       const tasks = await storage.getAll('task');
@@ -606,7 +622,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: find_untested_journeys
   server.addTool({
     name: 'find_untested_journeys',
-    description: 'Find journeys that have no steps recorded (journeys not yet executed/tested)',
+    description: 'Find all journeys with no recorded steps - these are scenarios that have been identified but not yet validated through task execution. Use this to identify which user stories or test cases need to be walked through.',
     parameters: z.object({}),
     execute: async () => {
       const journeys = await storage.getAll('journey');
@@ -618,10 +634,10 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: actor_can_achieve_goal
   server.addTool({
     name: 'actor_can_achieve_goal',
-    description: 'Check if a specific actor can achieve a specific goal (with detailed reasoning)',
+    description: 'Validate whether a specific actor possesses all abilities required by tasks that achieve a specific goal. Returns detailed reasoning including which abilities are present, which are missing, and which tasks are affected. Use this to validate actor-goal assignments or diagnose why a journey might fail.',
     parameters: z.object({
-      actor_id: z.string().uuid().describe('Actor UUID'),
-      goal_id: z.string().uuid().describe('Goal UUID'),
+      actor_id: z.string().uuid().describe('UUID of the actor to validate'),
+      goal_id: z.string().uuid().describe('UUID of the goal to check achievability for'),
     }),
     execute: async (args) => {
       const actor = await storage.get('actor', args.actor_id) as Actor | null;
@@ -656,9 +672,9 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: find_unachievable_goals
   server.addTool({
     name: 'find_unachievable_goals',
-    description: 'Find goals that cannot be achieved by their assigned actors (missing required abilities)',
+    description: 'Scan the entire model to find goals where assigned actors lack required abilities for associated tasks. This reveals systemic problems - goals that cannot be achieved with current actor capabilities. Use this as a health check to validate the model\'s coherence. Optionally filter to a specific actor to focus on one actor\'s capability gaps.',
     parameters: z.object({
-      actor_id: z.string().uuid().optional().describe('Optional: filter to goals assigned to this actor only'),
+      actor_id: z.string().uuid().optional().describe('Optional: UUID of a specific actor. If provided, only analyzes goals assigned to this actor. If omitted, checks all actors and all goals.'),
     }),
     execute: async (args) => {
       const goals = await storage.getAll('goal');

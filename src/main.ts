@@ -132,7 +132,7 @@ async function initializeApp() {
     console.log('[Main] Creating MCP server...');
     server = new FastMCP({
       name: 'screenplay-server',
-      version: '1.0.0',
+      version: '1.0.0'
     });
     console.log('[Main] MCP server created');
 
