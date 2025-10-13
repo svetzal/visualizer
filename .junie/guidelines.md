@@ -40,7 +40,48 @@ Files: `actors.json`, `goals.json`, `tasks.json`, `interactions.json`, `question
 - `ELECTRON_ENABLE_LOGGING=1 npm start` - Verbose Electron logs
 - Debug storage events: Check DevTools console for `[Main]` and `[Renderer]` logs
 
-## 2) Testing
+## 2) Release Procedure
+
+**Creating a new release (e.g., version 1.0.1):**
+
+1. **Bump version** in package.json (edit manually)
+2. **Clean build:**
+   ```bash
+   npm run clean
+   npm run build
+   ```
+3. **Start app and run E2E tests:**
+   ```bash
+   npm start                # Start Electron app (background or separate terminal)
+   npm run test:e2e         # All 32 tools must pass
+   # Stop app after tests complete
+   ```
+4. **Create packages for all platforms** (can run in parallel):
+   ```bash
+   npm run package:mac      # Creates .dmg and .zip for macOS
+   npm run package:win      # Creates installer and portable .exe for Windows
+   npm run package:linux    # Creates AppImage and .deb for Linux
+   ```
+   Output files will be in `release/` directory.
+
+5. **Commit and tag the release:**
+   ```bash
+   git add package.json
+   git commit -m "chore: bump version to X.Y.Z for release
+
+   - Updated package.json version from A.B.C to X.Y.Z
+   - All tests passing (32 tools verified)
+   - Packages built for macOS, Windows, and Linux"
+
+   git tag RELEASE_X_Y_Z    # Use underscores, not dots
+   ```
+
+**Important:**
+- Tag naming convention: `RELEASE_X_Y_Z` format (e.g., `RELEASE_1_0_1`)
+- All E2E tests must pass before packaging
+- Verify packages are created for all three platforms
+
+## 3) Testing
 
 **A) Automated E2E Tests (Recommended)**
 1. Start app: `npm start` (wait for Electron window showing MCP URL)
@@ -65,7 +106,7 @@ Tests use official MCP SDK client (`@modelcontextprotocol/sdk`) against `:3000/m
 2. Import in `src/tests/run-all-scenarios.ts`
 3. See `define-actor.ts` or `bookkeeping-full-graph.ts` for examples
 
-## 3) Additional Development Information
+## 4) Additional Development Information
 **Data and Schema Guarantees**
 - Zod schemas (`src/lib/schemas.ts`) validate all entities on load/save
 - Hand-edited JSON: Invalid entities will fail to load

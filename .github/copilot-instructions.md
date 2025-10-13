@@ -131,6 +131,40 @@ npm run package:linux    # Linux AppImage and .deb
 ```
 First-time packaging downloads platform binaries (~200MB).
 
+### Release Procedure
+**Creating a new release (e.g., 1.0.1):**
+
+1. **Bump version** in package.json
+2. **Clean build:**
+   ```bash
+   npm run clean && npm run build
+   ```
+3. **Run tests:**
+   ```bash
+   npm start    # In background
+   npm run test:e2e    # All 32 tools must pass
+   # Stop app after tests
+   ```
+4. **Package all platforms** (parallel):
+   ```bash
+   npm run package:mac
+   npm run package:win
+   npm run package:linux
+   ```
+5. **Commit and tag:**
+   ```bash
+   git add package.json
+   git commit -m "chore: bump version to X.Y.Z for release
+
+   - Updated package.json version from A.B.C to X.Y.Z
+   - All tests passing (32 tools verified)
+   - Packages built for macOS, Windows, and Linux"
+
+   git tag RELEASE_X_Y_Z
+   ```
+
+**Tag format:** `RELEASE_X_Y_Z` (underscores, not dots)
+
 ## Project-Specific Conventions
 
 ### Timestamps

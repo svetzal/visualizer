@@ -30,6 +30,52 @@ npm run package:linux    # Create Linux AppImage and .deb
 
 **Note:** First-time packaging downloads platform binaries (~200MB). Output in `release/` directory.
 
+### Release Procedure
+To prepare a new release (e.g., version 1.0.1):
+
+1. **Bump version** in package.json:
+   ```bash
+   # Edit package.json and change "version" field
+   ```
+
+2. **Clean build and test**:
+   ```bash
+   npm run clean
+   npm run build
+   npm start                # Start app in background
+   # In separate terminal:
+   npm run test:e2e         # Run all E2E tests
+   # Stop the app when tests complete
+   ```
+
+3. **Create packages for all platforms** (can run in parallel):
+   ```bash
+   npm run package:mac
+   npm run package:win
+   npm run package:linux
+   ```
+
+4. **Commit and tag the release**:
+   ```bash
+   git add package.json
+   git commit -m "chore: bump version to X.Y.Z for release
+
+   - Updated package.json version from A.B.C to X.Y.Z
+   - All tests passing (32 tools verified)
+   - Packages built for macOS, Windows, and Linux"
+
+   git tag RELEASE_X_Y_Z
+   ```
+
+**Tag naming convention:** Use `RELEASE_X_Y_Z` format (underscores, not dots) for version tags.
+
+**Verification checklist:**
+- [ ] All E2E tests pass (32 tools verified)
+- [ ] Packages created in `release/` directory for all three platforms
+- [ ] Version bump committed with descriptive message
+- [ ] Release tagged following naming convention
+- [ ] Tag matches package.json version
+
 ### Testing
 ```bash
 npm run test:e2e                    # Run automated E2E tests
