@@ -74,12 +74,37 @@ Files: `actors.json`, `goals.json`, `tasks.json`, `interactions.json`, `question
    - Packages built for macOS, Windows, and Linux"
 
    git tag RELEASE_X_Y_Z    # Use underscores, not dots
+   git push && git push --tags
+   ```
+
+6. **Create and publish GitHub release:**
+   ```bash
+   # Create draft release
+   gh release create RELEASE_X_Y_Z \
+     --title "Release X.Y.Z" \
+     --notes "Brief description of changes" \
+     --draft
+
+   # Upload assets (approximately 5 minutes for all files)
+   gh release upload RELEASE_X_Y_Z \
+     "release/screenplay-visualizer_X.Y.Z_arm64.deb" \
+     "release/Screenplay Visualizer-X.Y.Z-arm64-mac.zip" \
+     "release/Screenplay Visualizer-X.Y.Z-arm64.AppImage" \
+     "release/Screenplay Visualizer Setup X.Y.Z.exe"
+
+   # Verify uploads completed successfully
+   gh release view RELEASE_X_Y_Z
+
+   # Publish the release (remove draft status)
+   gh release edit RELEASE_X_Y_Z --draft=false
    ```
 
 **Important:**
 - Tag naming convention: `RELEASE_X_Y_Z` format (e.g., `RELEASE_1_0_1`)
 - All E2E tests must pass before packaging
 - Verify packages are created for all three platforms
+- Asset uploads can take ~5 minutes due to file sizes
+- Always verify assets uploaded before publishing
 
 ## 3) Testing
 

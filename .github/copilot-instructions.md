@@ -161,6 +161,23 @@ First-time packaging downloads platform binaries (~200MB).
    - Packages built for macOS, Windows, and Linux"
 
    git tag RELEASE_X_Y_Z
+   git push && git push --tags
+   ```
+
+6. **Create GitHub release:**
+   ```bash
+   # Create draft release
+   gh release create RELEASE_X_Y_Z --title "Release X.Y.Z" --notes "Release notes" --draft
+
+   # Upload assets (takes ~5 minutes)
+   gh release upload RELEASE_X_Y_Z \
+     "release/screenplay-visualizer_X.Y.Z_arm64.deb" \
+     "release/Screenplay Visualizer-X.Y.Z-arm64-mac.zip" \
+     "release/Screenplay Visualizer-X.Y.Z-arm64.AppImage" \
+     "release/Screenplay Visualizer Setup X.Y.Z.exe"
+
+   # Publish
+   gh release edit RELEASE_X_Y_Z --draft=false
    ```
 
 **Tag format:** `RELEASE_X_Y_Z` (underscores, not dots)

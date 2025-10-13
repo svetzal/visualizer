@@ -8,9 +8,9 @@ A real-time visualization tool for ensemble coding sessions. Projects a live dia
 
 ### Download & Install
 
-**Coming soon:** Pre-built releases for macOS, Windows, and Linux will be available on the [Releases](../../releases) page.
+Pre-built releases for macOS, Windows, and Linux are available on the [Releases](../../releases) page.
 
-For now, see the Developer section below to run from source.
+Alternatively, see the Developer section below to run from source.
 
 ### What It Does
 

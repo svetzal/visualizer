@@ -65,6 +65,26 @@ To prepare a new release (e.g., version 1.0.1):
    - Packages built for macOS, Windows, and Linux"
 
    git tag RELEASE_X_Y_Z
+   git push && git push --tags
+   ```
+
+5. **Create GitHub release**:
+   ```bash
+   # Create draft release with notes
+   gh release create RELEASE_X_Y_Z \
+     --title "Release X.Y.Z" \
+     --notes "Brief description of changes" \
+     --draft
+
+   # Upload release assets
+   gh release upload RELEASE_X_Y_Z \
+     "release/screenplay-visualizer_X.Y.Z_arm64.deb" \
+     "release/Screenplay Visualizer-X.Y.Z-arm64-mac.zip" \
+     "release/Screenplay Visualizer-X.Y.Z-arm64.AppImage" \
+     "release/Screenplay Visualizer Setup X.Y.Z.exe"
+
+   # Publish the release (removes draft status)
+   gh release edit RELEASE_X_Y_Z --draft=false
    ```
 
 **Tag naming convention:** Use `RELEASE_X_Y_Z` format (underscores, not dots) for version tags.
@@ -75,6 +95,8 @@ To prepare a new release (e.g., version 1.0.1):
 - [ ] Version bump committed with descriptive message
 - [ ] Release tagged following naming convention
 - [ ] Tag matches package.json version
+- [ ] GitHub release created with assets uploaded
+- [ ] Release published (not in draft status)
 
 ### Testing
 ```bash
