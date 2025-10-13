@@ -70,6 +70,7 @@ To prepare a new release (e.g., version 1.0.1):
 
 5. **Create GitHub release**:
    ```bash
+   # Use git log to determine changes since prior release
    # Create draft release with notes
    gh release create RELEASE_X_Y_Z \
      --title "Release X.Y.Z" \
