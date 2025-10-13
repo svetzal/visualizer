@@ -1,6 +1,7 @@
 import { withClient, setHarnessOptions } from './harness/runner.js';
 import comprehensiveCrudAndComposition from './scenarios/comprehensive-crud-and-composition.js';
 import queryTools from './scenarios/query-tools.js';
+import visualizerItself from './scenarios/visualizer-itself.js';
 
 async function main() {
   // Parse command-line arguments for step delay
@@ -31,6 +32,13 @@ async function main() {
       await client.callTool('clear_model', {});
       await delayIfNeeded(delay);
       await queryTools(client);
+    });
+
+    // Run visualizer-itself scenario (models the visualizer's audience and purpose)
+    await runScenario('visualizer-itself', async () => {
+      await client.callTool('clear_model', {});
+      await delayIfNeeded(delay);
+      await visualizerItself(client);
     });
   });
   console.log('\n✅ All tests passed - 32 tools verified!');
