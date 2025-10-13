@@ -496,6 +496,166 @@ function renderNodes() {
       },
       update => {
         console.log('[Renderer] Update selection:', update.size(), 'nodes');
+        update.each(function(d) {
+          console.log('[Renderer] Updating node:', d.id, d.type, d.name);
+        });
+
+        // Update visual elements for changed data
+        update.each(function(d) {
+          const node = d3.select(this);
+
+          // Update text labels based on node type
+          if (d.type === 'actor') {
+            // Update name text with wrapping
+            const nameLines = wrapText(d.name, 70);
+            const labelGroup = node.select('.label-group');
+
+            // Remove old text elements
+            labelGroup.selectAll('text').remove();
+
+            // Add updated text
+            const lineHeight = 14;
+            const startY = -5 - ((nameLines.length - 1) * lineHeight / 2);
+            nameLines.forEach((line, i) => {
+              labelGroup.append('text')
+                .attr('class', 'node-label-inside')
+                .attr('dy', startY + (i * lineHeight))
+                .text(line);
+            });
+
+            // Update abilities metadata
+            const metaText = node.select('.node-meta');
+            if (d.abilities && d.abilities.length > 0) {
+              if (metaText.empty()) {
+                node.append('text')
+                  .attr('class', 'node-meta')
+                  .attr('dy', 10 + (nameLines.length > 1 ? (nameLines.length - 1) * 7 : 0))
+                  .text(`${d.abilities.length} abilities`);
+              } else {
+                metaText
+                  .attr('dy', 10 + (nameLines.length > 1 ? (nameLines.length - 1) * 7 : 0))
+                  .text(`${d.abilities.length} abilities`);
+              }
+            } else {
+              metaText.remove();
+            }
+
+          } else if (d.type === 'goal') {
+            // Update name text with wrapping
+            const nameLines = wrapText(d.name, 90);
+            const labelGroup = node.select('.label-group');
+
+            // Remove old text elements
+            labelGroup.selectAll('text').remove();
+
+            // Add updated text
+            const lineHeight = 14;
+            const startY = -5 - ((nameLines.length - 1) * lineHeight / 2);
+            nameLines.forEach((line, i) => {
+              labelGroup.append('text')
+                .attr('class', 'node-label-inside')
+                .attr('dy', startY + (i * lineHeight))
+                .text(line);
+            });
+
+            // Update metadata
+            let metaText = '';
+            if (d.assigned_to && d.assigned_to.length > 0) {
+              metaText = `→ ${d.assigned_to.length} actors`;
+            }
+            if (d.constraints && d.constraints.length > 0) {
+              metaText += (metaText ? ' • ' : '') + `${d.constraints.length} constraints`;
+            }
+
+            const metaElement = node.select('.node-meta');
+            if (metaText) {
+              if (metaElement.empty()) {
+                node.append('text')
+                  .attr('class', 'node-meta')
+                  .attr('dy', 12 + (nameLines.length > 1 ? (nameLines.length - 1) * 7 : 0))
+                  .text(metaText);
+              } else {
+                metaElement
+                  .attr('dy', 12 + (nameLines.length > 1 ? (nameLines.length - 1) * 7 : 0))
+                  .text(metaText);
+              }
+            } else {
+              metaElement.remove();
+            }
+
+          } else if (d.type === 'task') {
+            // Update name text with wrapping
+            const nameLines = wrapText(d.name, 40);
+            const labelGroup = node.select('.label-group');
+
+            // Remove old text elements
+            labelGroup.selectAll('text').remove();
+
+            // Add updated text
+            const lineHeight = 14;
+            const startY = 0 - ((nameLines.length - 1) * lineHeight / 2);
+            nameLines.forEach((line, i) => {
+              labelGroup.append('text')
+                .attr('class', 'node-label-inside')
+                .attr('dy', startY + (i * lineHeight))
+                .text(line);
+            });
+
+            // Update composition count
+            const metaElement = node.select('.node-meta');
+            if (d.composed_of && d.composed_of.length > 0) {
+              if (metaElement.empty()) {
+                node.append('text')
+                  .attr('class', 'node-meta')
+                  .attr('dy', 15 + (nameLines.length > 1 ? (nameLines.length - 1) * 7 : 0))
+                  .text(`${d.composed_of.length} interactions`);
+              } else {
+                metaElement
+                  .attr('dy', 15 + (nameLines.length > 1 ? (nameLines.length - 1) * 7 : 0))
+                  .text(`${d.composed_of.length} interactions`);
+              }
+            } else {
+              metaElement.remove();
+            }
+
+          } else if (d.type === 'interaction') {
+            // Update name text with wrapping
+            const nameLines = wrapText(d.name, 55);
+            const labelGroup = node.select('.label-group');
+
+            // Remove old text elements
+            labelGroup.selectAll('text').remove();
+
+            // Add updated text
+            const lineHeight = 14;
+            const startY = 5 - ((nameLines.length - 1) * lineHeight / 2);
+            nameLines.forEach((line, i) => {
+              labelGroup.append('text')
+                .attr('class', 'node-label-inside')
+                .attr('dy', startY + (i * lineHeight))
+                .text(line);
+            });
+
+          } else if (d.type === 'question') {
+            // Update name text with wrapping
+            const nameLines = wrapText(d.name, 55);
+            const labelGroup = node.select('.label-group');
+
+            // Remove old text elements
+            labelGroup.selectAll('text').remove();
+
+            // Add updated text
+            const lineHeight = 14;
+            const startY = 5 - ((nameLines.length - 1) * lineHeight / 2);
+            nameLines.forEach((line, i) => {
+              labelGroup.append('text')
+                .attr('class', 'node-label-inside')
+                .attr('dy', startY + (i * lineHeight))
+                .text(line);
+            });
+          }
+        });
+
         return update;
       },
       exit => {

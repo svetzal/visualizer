@@ -1,6 +1,6 @@
 {
   "name": "screenplay-visualizer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "MCP Server + Electron Visualizer for Screenplay ensemble coding",
   "type": "module",
   "main": "dist/bootstrap.js",
