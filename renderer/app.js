@@ -206,6 +206,23 @@ function buildEdges() {
     });
   });
 
+  // Goal → Task (Task helps achieve Goal)
+  const allGoalIds = new Set(currentModel.goals.map(g => g.id));
+
+  currentModel.tasks.forEach(task => {
+    if (task.goal_ids && task.goal_ids.length > 0) {
+      task.goal_ids.forEach(goal_id => {
+        // If goal doesn't exist, it's a gap, use gap- prefix
+        const targetId = allGoalIds.has(goal_id) ? goal_id : 'gap-' + goal_id;
+        edgeList.push({
+          source: goal_id,
+          target: task.id,
+          type: allGoalIds.has(goal_id) ? 'goal_task' : 'gap',
+        });
+      });
+    }
+  });
+
   // Task composition (Task → Interaction or Task → Gap)
   const allInteractionIds = new Set(currentModel.interactions.map(i => i.id));
 
@@ -277,9 +294,9 @@ function updateVisualization() {
   edges = buildEdges();
   console.log('[Renderer] Total edges:', edges.length);
 
-  // Update D3 visualization
-  renderNodes();
+  // Update D3 visualization (render edges first so they appear underneath nodes)
   renderEdges();
+  renderNodes();
 
   // Update simulation
   simulation.nodes(nodes);

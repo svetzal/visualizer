@@ -434,6 +434,7 @@ contextBridge.exposeInMainWorld('screenplay', {
 **Edge Types:**
 
 - **Goal Assignment** (Actor → Goal, solid gray)
+- **Goal-Task Relationship** (Goal → Task, solid teal, shows which tasks help achieve which goals)
 - **Task Composition** (Task → Interaction, solid purple)
 - **Can Achieve** (Actor → Goal, dashed green, only if true)
 - **Gap Reference** (Any → Gap, dashed red)

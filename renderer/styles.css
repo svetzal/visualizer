@@ -185,6 +185,11 @@ main {
   stroke-opacity: 0.6;
 }
 
+.edge-goal_task {
+  stroke: #14b8a6;
+  stroke-opacity: 0.7;
+}
+
 .edge-composition {
   stroke: #7C3AED;
   stroke-opacity: 0.6;
