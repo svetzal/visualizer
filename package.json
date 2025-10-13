@@ -22,7 +22,7 @@
     "screenplay",
     "visualization"
   ],
-  "author": "",
+  "author": "Stacey Vetzal <stacey@vetzal.com>",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",
