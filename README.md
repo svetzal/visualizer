@@ -235,6 +235,33 @@ npm run clean
 
 Removes the `dist/` directory.
 
+### Packaging
+
+To create distributable applications:
+
+```bash
+# Build unpacked app for local testing
+npm run package
+
+# Create macOS app (.dmg and .zip)
+npm run package:mac
+
+# Create Windows app (.exe installer and portable)
+npm run package:win
+
+# Create Linux app (AppImage and .deb)
+npm run package:linux
+```
+
+The packaged apps will be created in the `release/` directory. These are standalone applications that can be distributed to users without requiring Node.js or npm.
+
+**Platform-specific notes:**
+- **macOS**: Creates a .dmg installer and .zip archive. App will be in `/Applications` after installation.
+- **Windows**: Creates an NSIS installer and portable .exe. No admin rights needed for portable version.
+- **Linux**: Creates an AppImage (runs anywhere) and .deb package (for Debian/Ubuntu).
+
+**First-time setup**: The first package build may take longer as electron-builder downloads platform-specific binaries.
+
 ## Next Steps (Phase 2)
 
 - [ ] Add remaining CRUD tools (task, interaction, question, journey)

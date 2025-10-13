@@ -20,6 +20,16 @@ npm run clean            # Remove dist/ directory
 
 **Note:** Node 20+ required (tested with v22.13.0). Package uses ES modules (`"type": "module"`).
 
+### Packaging
+```bash
+npm run package          # Build unpacked app for testing (release/ directory)
+npm run package:mac      # Create macOS .dmg and .zip
+npm run package:win      # Create Windows installer and portable .exe
+npm run package:linux    # Create Linux AppImage and .deb
+```
+
+**Note:** First-time packaging downloads platform binaries (~200MB). Output in `release/` directory.
+
 ### Testing
 ```bash
 npm run test:e2e                    # Run automated E2E tests

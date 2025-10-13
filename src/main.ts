@@ -169,12 +169,11 @@ async function initializeApp() {
       }
     });
 
-    // Send server URL to renderer once it's ready
-    mainWindow?.webContents.on('did-finish-load', () => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('server-started', `http://localhost:${serverPort}/mcp`);
-      }
-    });
+    // Send server URL to renderer (window just finished loading)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      console.log(`[Main] Sending server URL to renderer: http://localhost:${serverPort}/mcp`);
+      mainWindow.webContents.send('server-started', `http://localhost:${serverPort}/mcp`);
+    }
 
     console.log('[Main] Application ready');
   } catch (error) {
