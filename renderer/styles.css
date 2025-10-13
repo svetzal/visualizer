@@ -26,6 +26,16 @@ header {
   flex-shrink: 0;
 }
 
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-left {
+  flex: 1;
+}
+
 header h1 {
   font-size: 28px;
   font-weight: 600;
@@ -55,7 +65,7 @@ header h1 {
 }
 
 #controls {
-  margin-top: 15px;
+  flex-shrink: 0;
 }
 
 #clear-button {

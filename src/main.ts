@@ -70,6 +70,14 @@ async function createWindow(): Promise<void> {
   // Open DevTools to debug (always open for now)
   // mainWindow.webContents.openDevTools();
 
+  // Send server URL whenever the page finishes loading (including refreshes)
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (serverPort && mainWindow && !mainWindow.isDestroyed()) {
+      console.log(`[Main] Page loaded, sending server URL: http://localhost:${serverPort}/mcp`);
+      mainWindow.webContents.send('server-started', `http://localhost:${serverPort}/mcp`);
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -169,7 +177,7 @@ async function initializeApp() {
       }
     });
 
-    // Send server URL to renderer (window just finished loading)
+    // Send server URL to renderer after initialization (for initial load)
     if (mainWindow && !mainWindow.isDestroyed()) {
       console.log(`[Main] Sending server URL to renderer: http://localhost:${serverPort}/mcp`);
       mainWindow.webContents.send('server-started', `http://localhost:${serverPort}/mcp`);
