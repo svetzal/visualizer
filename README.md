@@ -1,6 +1,8 @@
 # Screenplay Visualizer
 
-A real-time visualization tool for ensemble coding sessions. Projects a live diagram of your system's actors, goals, tasks, and interactions as Claude Code builds the model from your team's conversation.
+A real-time visualization tool for ensemble coding sessions. Projects a live diagram of your system's actors, goals, tasks, and interactions as your favourite MCP-enabled agent (Github Copilot, Claude Code, Windsurf, etc.) builds the model from your team's conversation.
+
+![Visualizer](media/visualizer.png)
 
 ## For Users
 
@@ -12,7 +14,7 @@ For now, see the Developer section below to run from source.
 
 ### What It Does
 
-The Screenplay Visualizer runs an MCP (Model Context Protocol) server that Claude Code connects to during ensemble coding sessions. As your team discusses the system you're building, Claude Code creates entities in real-time:
+The Screenplay Visualizer runs an MCP (Model Context Protocol) server that your agent connects to during ensemble coding sessions. As your team discusses the system you're building, your agent creates entities in real-time:
 
 - **Actors** (blue circles) - People or systems that interact
 - **Goals** (green squares) - What actors want to achieve
@@ -26,8 +28,8 @@ The visualization updates within 1 second of any change, keeping the entire team
 
 1. **Launch the app** - The Screenplay Visualizer window opens with an empty canvas
 2. **Note the MCP URL** - Displayed in the header (typically `http://localhost:3000/mcp`)
-3. **Configure Claude Code** - Add the MCP server to your Claude Code configuration
-4. **Start your ensemble session** - As Claude Code processes your conversation, entities appear in real-time
+3. **Configure Your Agent** - Add the MCP server to your agent configuration
+4. **Start your ensemble session** - As your agent processes your conversation, entities appear in real-time
 5. **Project on second screen** - The visualization is designed to be readable from across the room
 
 **Gap-Driven Development:** Red "?" nodes appear when you reference something not yet defined (e.g., "the payment processor handles this" before you've discussed the payment processor). This prompts the team to fill in missing details.
