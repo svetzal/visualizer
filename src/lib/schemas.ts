@@ -26,6 +26,7 @@ export const GoalSchema = EntitySchema.extend({
 export const TaskSchema = EntitySchema.extend({
   required_abilities: z.array(z.string()),
   composed_of: z.array(z.string().min(1)), // Allow any string ID (may reference non-existent interactions to create gaps)
+  goal_ids: z.array(z.string().min(1)).optional().default([]), // Goals this task helps achieve (may reference non-existent goals)
 });
 
 // Interaction Schema

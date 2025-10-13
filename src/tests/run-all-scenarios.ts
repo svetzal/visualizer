@@ -1,5 +1,6 @@
 import { withClient, setHarnessOptions } from './harness/runner.js';
 import comprehensiveCrudAndComposition from './scenarios/comprehensive-crud-and-composition.js';
+import queryTools from './scenarios/query-tools.js';
 
 async function main() {
   // Parse command-line arguments for step delay
@@ -24,8 +25,15 @@ async function main() {
       await delayIfNeeded(delay);
       await comprehensiveCrudAndComposition(client);
     });
+
+    // Run Phase 3 query tools scenario
+    await runScenario('query-tools', async () => {
+      await client.callTool('clear_model', {});
+      await delayIfNeeded(delay);
+      await queryTools(client);
+    });
   });
-  console.log('\n✅ All tests passed - 27 tools verified!');
+  console.log('\n✅ All tests passed - 32 tools verified!');
 }
 
 async function delayIfNeeded(delay: number | undefined): Promise<void> {

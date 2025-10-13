@@ -3,6 +3,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { JSONStorage } from '../lib/storage.js';
 import { Actor, Goal, Task, Interaction, Question, Journey, Gap } from '../lib/schemas.js';
+import {
+  findActorsWithoutAbility,
+  findTasksWithoutInteractions,
+  findUntestedJourneys,
+  checkActorCanAchieveGoal,
+  findUnachievableGoals,
+} from '../lib/queries.js';
 
 export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_actor
@@ -145,6 +152,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
       description: z.string().describe('Free text description'),
       required_abilities: z.array(z.string()).describe('Abilities needed to perform this task'),
       composed_of: z.array(z.string().uuid()).optional().default([]).describe('Interaction IDs (may reference non-existent interactions)'),
+      goal_ids: z.array(z.string().uuid()).optional().default([]).describe('Goal IDs this task helps achieve (may reference non-existent goals)'),
     }),
     execute: async (args) => {
       const now = new Date().toISOString();
@@ -154,6 +162,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
         description: args.description,
         required_abilities: args.required_abilities,
         composed_of: args.composed_of,
+        goal_ids: args.goal_ids,
         created_at: now,
         updated_at: now,
       };
@@ -173,6 +182,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
       description: z.string().optional().describe('Updated description'),
       required_abilities: z.array(z.string()).optional().describe('Updated required abilities'),
       composed_of: z.array(z.string().uuid()).optional().describe('Updated interaction IDs'),
+      goal_ids: z.array(z.string().uuid()).optional().describe('Updated goal IDs'),
     }),
     execute: async (args) => {
       const { id, ...updates } = args;
@@ -560,6 +570,108 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
       const updated = await storage.update('journey', args.journey_id, { goal_ids: journey.goal_ids });
 
       return JSON.stringify({ success: true, data: updated });
+    },
+  });
+
+  // ============================================================
+  // Phase 3: Query/Analytical Tools (5 tools)
+  // ============================================================
+
+  // Tool: find_actors_without_ability
+  server.addTool({
+    name: 'find_actors_without_ability',
+    description: 'Find actors that lack a specific ability',
+    parameters: z.object({
+      ability: z.string().describe('The ability to check for (e.g., "deploy", "write_code")'),
+    }),
+    execute: async (args) => {
+      const actors = await storage.getAll('actor');
+      const result = findActorsWithoutAbility(actors as Actor[], args.ability);
+      return JSON.stringify(result);
+    },
+  });
+
+  // Tool: find_tasks_without_interactions
+  server.addTool({
+    name: 'find_tasks_without_interactions',
+    description: 'Find tasks that have no interactions defined (empty tasks needing decomposition)',
+    parameters: z.object({}),
+    execute: async () => {
+      const tasks = await storage.getAll('task');
+      const result = findTasksWithoutInteractions(tasks as Task[]);
+      return JSON.stringify(result);
+    },
+  });
+
+  // Tool: find_untested_journeys
+  server.addTool({
+    name: 'find_untested_journeys',
+    description: 'Find journeys that have no steps recorded (journeys not yet executed/tested)',
+    parameters: z.object({}),
+    execute: async () => {
+      const journeys = await storage.getAll('journey');
+      const result = findUntestedJourneys(journeys as Journey[]);
+      return JSON.stringify(result);
+    },
+  });
+
+  // Tool: actor_can_achieve_goal
+  server.addTool({
+    name: 'actor_can_achieve_goal',
+    description: 'Check if a specific actor can achieve a specific goal (with detailed reasoning)',
+    parameters: z.object({
+      actor_id: z.string().uuid().describe('Actor UUID'),
+      goal_id: z.string().uuid().describe('Goal UUID'),
+    }),
+    execute: async (args) => {
+      const actor = await storage.get('actor', args.actor_id) as Actor | null;
+      const goal = await storage.get('goal', args.goal_id) as Goal | null;
+      const tasks = await storage.getAll('task');
+
+      if (!actor) {
+        return JSON.stringify({
+          can_achieve: false,
+          reason: `Actor ${args.actor_id} not found`,
+          actor_abilities: [],
+          required_abilities: [],
+          missing_abilities: [],
+        });
+      }
+
+      if (!goal) {
+        return JSON.stringify({
+          can_achieve: false,
+          reason: `Goal ${args.goal_id} not found`,
+          actor_abilities: actor.abilities,
+          required_abilities: [],
+          missing_abilities: [],
+        });
+      }
+
+      const result = checkActorCanAchieveGoal(actor, goal, tasks as Task[]);
+      return JSON.stringify(result);
+    },
+  });
+
+  // Tool: find_unachievable_goals
+  server.addTool({
+    name: 'find_unachievable_goals',
+    description: 'Find goals that cannot be achieved by their assigned actors (missing required abilities)',
+    parameters: z.object({
+      actor_id: z.string().uuid().optional().describe('Optional: filter to goals assigned to this actor only'),
+    }),
+    execute: async (args) => {
+      const goals = await storage.getAll('goal');
+      const actors = await storage.getAll('actor');
+      const tasks = await storage.getAll('task');
+
+      const result = findUnachievableGoals(
+        goals as Goal[],
+        actors as Actor[],
+        tasks as Task[],
+        args.actor_id
+      );
+      return JSON.stringify(result);
     },
   });
 }

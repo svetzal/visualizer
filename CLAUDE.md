@@ -107,21 +107,32 @@ All entities extend the base `Entity` interface with `id`, `name`, `description`
 
 ## MCP Tools
 
-**Phase 1 (Implemented):**
+**Phase 1 (Complete - 5 tools):**
 - `define_actor` - Create actor
 - `define_goal` - Create goal (allows missing actor IDs)
 - `delete_actor` - Delete actor (creates gaps in assigned goals)
 - `get_full_model` - Returns all entities + computed gaps
 - `clear_model` - Clears all data (for test cleanup)
 
-**Phase 2 (Implemented):**
+**Phase 2 (Complete - 15 tools added):**
 - CRUD tools for all entity types: `define_*`, `update_*`, `delete_*`
 - Full set: actor, goal, task, interaction, question, journey
+- Tools: `update_actor`, `define_task`, `update_task`, `delete_task`, `define_interaction`, `update_interaction`, `delete_interaction`, `update_goal`, `delete_goal`, `define_question`, `update_question`, `delete_question`, `define_journey`, `update_journey`, `delete_journey`
 
-**Phase 2+ (Planned):**
-- Composition tools: `assign_goal_to_actor`, `compose_task`, `record_journey_step`
-- Query tools: `find_actors_without_ability`, `find_unachievable_goals`, `actor_can_achieve_goal`
-- Visualization tools: `get_actor_capability_map`, `get_journey_flow`, `get_goal_coverage_matrix`
+**Phase 2.5 (Complete - 7 tools added):**
+- Composition tools for natural conversation flow
+- All tools are idempotent (safe to call multiple times)
+- Tools: `assign_goal_to_actor`, `unassign_goal_from_actor`, `add_interaction_to_task`, `remove_interaction_from_task`, `record_journey_step`, `add_goal_to_journey`, `remove_goal_from_journey`
+
+**Phase 3 (Complete - 5 query tools added):**
+- Query/analytical tools for surfacing insights
+- All query logic in `src/lib/queries.ts` (pure functions)
+- Tools: `find_actors_without_ability`, `find_tasks_without_interactions`, `find_untested_journeys`, `actor_can_achieve_goal`, `find_unachievable_goals`
+
+**Current Status: 32 tools implemented, 2 comprehensive test scenarios**
+
+**Phase 4 (Future):**
+- Visualization tools: `get_actor_capability_map`, `get_journey_flow`, `get_goal_coverage_matrix`, `get_recent_changes`
 
 **Tool Implementation Pattern:**
 1. Validate input with Zod schema
@@ -277,19 +288,26 @@ Both use ES modules (`"type": "module"` in package.json), output to `dist/`, tar
 
 ## Phase Status
 
-**Phase 1 (Complete):** Walking skeleton with 5 core tools, E2E test harness, ~800 lines of code
-**Phase 2 (In Progress):** Full CRUD tools for all entity types
-**Phase 3 (Planned):** Composition tools, query tools, real ensemble session testing
+**Phase 1 (Complete):** Walking skeleton with 5 core tools, E2E test harness
+**Phase 2 (Complete):** Full CRUD tools for all 6 entity types (15 tools added)
+**Phase 2.5 (Complete):** Composition tools for natural conversation flow (7 tools added)
+**Phase 3 (Complete):** Query/analytical tools to surface insights (5 tools added)
+**Current State:** 32 tools, ~2,400 lines of TypeScript, 2 comprehensive test scenarios
+**Ready for real ensemble coding sessions!**
+**Phase 4 (Planned):** Advanced visualization and analysis tools (based on usage feedback)
 
 ## File References
 
 - Entity schemas: `src/lib/schemas.ts`
 - Storage implementation: `src/lib/storage.ts`
-- MCP tool registration: `src/mcp-server/tools.ts`
-- Gap computation: `src/mcp-server/tools.ts:402`
+- Query helpers (Phase 3): `src/lib/queries.ts`
+- MCP tool registration: `src/mcp-server/tools.ts` (565+ lines, 27 tools)
+- Gap computation: `src/mcp-server/tools.ts:567`
 - D3 visualization: `renderer/app.js`
 - Test client wrapper: `src/tests/harness/mcp-client.ts`
 - Test runner framework: `src/tests/harness/runner.ts`
+- Comprehensive test scenario: `src/tests/scenarios/comprehensive-crud-and-composition.ts` (551 lines)
+- Query tools test scenario: `src/tests/scenarios/query-tools.ts` (Phase 3 tests)
 
 ## Quick Start
 
