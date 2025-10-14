@@ -165,28 +165,30 @@ function computeGaps() {
 
   // Check task.composed_of for missing interactions
   currentModel.tasks.forEach(task => {
-    task.composed_of.forEach(interaction_id => {
-      if (!allIds.has(interaction_id)) {
-        const existing = gapsMap.get(interaction_id);
-        if (existing) {
-          existing.referenced_by.push(task.id);
-        } else {
-          gapsMap.set(interaction_id, {
-            id: 'gap-' + interaction_id,  // Use different ID for gaps
-            originalId: interaction_id,   // Keep track of what's missing
-            type: 'gap',
-            expected_type: 'interaction',
-            referenced_by: [task.id],
-          });
+    if (Array.isArray(task.composed_of) && task.composed_of.length > 0) {
+      task.composed_of.forEach(interaction_id => {
+        if (!allIds.has(interaction_id)) {
+          const existing = gapsMap.get(interaction_id);
+          if (existing) {
+            existing.referenced_by.push(task.id);
+          } else {
+            gapsMap.set(interaction_id, {
+              id: 'gap-' + interaction_id,  // Use different ID for gaps
+              originalId: interaction_id,   // Keep track of what's missing
+              type: 'gap',
+              expected_type: 'interaction',
+              referenced_by: [task.id],
+            });
+          }
         }
-      }
-    });
+      });
+    }
   });
 
   // Check task.goal_ids for missing goals
   const allGoalIds = new Set(currentModel.goals.map(g => g.id));
   currentModel.tasks.forEach(task => {
-    if (task.goal_ids && task.goal_ids.length > 0) {
+    if (Array.isArray(task.goal_ids) && task.goal_ids.length > 0) {
       task.goal_ids.forEach(goal_id => {
         if (!allGoalIds.has(goal_id)) {
           const existing = gapsMap.get(goal_id);
@@ -215,6 +217,8 @@ function buildEdges() {
 
   // Build a map to check if IDs are actors or gaps
   const allActorIds = new Set(currentModel.actors.map(a => a.id));
+  // Build a set of all goal IDs once to avoid repeated lookups
+  const allGoalIds = new Set(currentModel.goals.map(g => g.id));
 
   // Goal assignments (Actor → Goal or Gap → Goal)
   currentModel.goals.forEach(goal => {
@@ -230,17 +234,16 @@ function buildEdges() {
   });
 
   // Goal → Task (Task helps achieve Goal)
-  const allGoalIds = new Set(currentModel.goals.map(g => g.id));
-
   currentModel.tasks.forEach(task => {
-    if (task.goal_ids && task.goal_ids.length > 0) {
+    if (Array.isArray(task.goal_ids) && task.goal_ids.length > 0) {
       task.goal_ids.forEach(goal_id => {
         // If goal doesn't exist, it's a gap, use gap- prefix for the SOURCE (goal)
-        const sourceId = allGoalIds.has(goal_id) ? goal_id : 'gap-' + goal_id;
+        const goalExists = allGoalIds.has(goal_id);
+        const sourceId = goalExists ? goal_id : 'gap-' + goal_id;
         edgeList.push({
           source: sourceId,
           target: task.id,
-          type: allGoalIds.has(goal_id) ? 'goal_task' : 'gap',
+          type: goalExists ? 'goal_task' : 'gap',
         });
       });
     }
@@ -250,15 +253,17 @@ function buildEdges() {
   const allInteractionIds = new Set(currentModel.interactions.map(i => i.id));
 
   currentModel.tasks.forEach(task => {
-    task.composed_of.forEach(interaction_id => {
-      // If interaction doesn't exist, it's a gap, use gap- prefix
-      const targetId = allInteractionIds.has(interaction_id) ? interaction_id : 'gap-' + interaction_id;
-      edgeList.push({
-        source: task.id,
-        target: targetId,
-        type: allInteractionIds.has(interaction_id) ? 'composition' : 'gap',
+    if (Array.isArray(task.composed_of) && task.composed_of.length > 0) {
+      task.composed_of.forEach(interaction_id => {
+        // If interaction doesn't exist, it's a gap, use gap- prefix
+        const targetId = allInteractionIds.has(interaction_id) ? interaction_id : 'gap-' + interaction_id;
+        edgeList.push({
+          source: task.id,
+          target: targetId,
+          type: allInteractionIds.has(interaction_id) ? 'composition' : 'gap',
+        });
       });
-    });
+    }
   });
 
   return edgeList;

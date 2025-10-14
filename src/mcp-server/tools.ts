@@ -730,20 +730,22 @@ function computeGaps(model: {
 
   // Check task.composed_of for missing interactions
   model.tasks.forEach((task) => {
-    task.composed_of.forEach((interaction_id: string) => {
-      if (!allIds.has(interaction_id)) {
-        const existing = gapsMap.get(interaction_id);
-        if (existing) {
-          existing.referenced_by.push(task.id);
-        } else {
-          gapsMap.set(interaction_id, {
-            id: interaction_id,
-            expected_type: 'interaction',
-            referenced_by: [task.id],
-          });
+    if (Array.isArray(task.composed_of) && task.composed_of.length > 0) {
+      task.composed_of.forEach((interaction_id: string) => {
+        if (!allIds.has(interaction_id)) {
+          const existing = gapsMap.get(interaction_id);
+          if (existing) {
+            existing.referenced_by.push(task.id);
+          } else {
+            gapsMap.set(interaction_id, {
+              id: interaction_id,
+              expected_type: 'interaction',
+              referenced_by: [task.id],
+            });
+          }
         }
-      }
-    });
+      });
+    }
   });
 
   // Check journey.actor_id for missing actors
