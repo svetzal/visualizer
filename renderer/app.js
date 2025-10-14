@@ -183,6 +183,29 @@ function computeGaps() {
     });
   });
 
+  // Check task.goal_ids for missing goals
+  const allGoalIds = new Set(currentModel.goals.map(g => g.id));
+  currentModel.tasks.forEach(task => {
+    if (task.goal_ids && task.goal_ids.length > 0) {
+      task.goal_ids.forEach(goal_id => {
+        if (!allGoalIds.has(goal_id)) {
+          const existing = gapsMap.get(goal_id);
+          if (existing) {
+            existing.referenced_by.push(task.id);
+          } else {
+            gapsMap.set(goal_id, {
+              id: 'gap-' + goal_id,
+              originalId: goal_id,
+              type: 'gap',
+              expected_type: 'goal',
+              referenced_by: [task.id],
+            });
+          }
+        }
+      });
+    }
+  });
+
   return Array.from(gapsMap.values());
 }
 
@@ -212,10 +235,10 @@ function buildEdges() {
   currentModel.tasks.forEach(task => {
     if (task.goal_ids && task.goal_ids.length > 0) {
       task.goal_ids.forEach(goal_id => {
-        // If goal doesn't exist, it's a gap, use gap- prefix
-        const targetId = allGoalIds.has(goal_id) ? goal_id : 'gap-' + goal_id;
+        // If goal doesn't exist, it's a gap, use gap- prefix for the SOURCE (goal)
+        const sourceId = allGoalIds.has(goal_id) ? goal_id : 'gap-' + goal_id;
         edgeList.push({
-          source: goal_id,
+          source: sourceId,
           target: task.id,
           type: allGoalIds.has(goal_id) ? 'goal_task' : 'gap',
         });
