@@ -636,6 +636,189 @@ The test harness validates:
 - Custom layout algorithms (force layout handles everything)
 - Search/filter UI (model should stay small enough to see all at once)
 
+---
+
+## Navigator Overlay: Journeys & Steps Across the Screenplay Model
+
+Actors can realize their Goals in multiple ways by undertaking different Journeys. The Journey is the Actor's Navigator; Steps form the route (ordered, retriable events) across Tasks and their composing Interactions toward one or more Goals. This overlay clarifies how "execution flows" traverse the underlying Screenplay model.
+
+```mermaid
+classDiagram
+    %% Core Screenplay
+    class Actor
+    class Goal
+    class Task
+    class Interaction
+    class Product  %% Also known as System Under Test
+
+    %% Navigator
+    class Journey {
+      +id
+      +name
+      +actor_id
+      +goal_ids[*]
+      +steps[*]
+    }
+
+    class JourneyStep {
+      +task_id
+      +outcome   // success | failure | blocked
+      +timestamp
+      %% Order is implied by index in steps[]
+    }
+
+    %% Relationships
+    Journey --> "1" Actor : by
+    Journey --> "0..*" Goal : pursues
+    Journey *-- "0..*" JourneyStep : ordered steps
+    JourneyStep --> "1" Task : performs
+    Task *-- "0..*" Interaction : composed of
+    Interaction --> Product : touches
+```
+
+Sequence view (optional):
+
+```mermaid
+sequenceDiagram
+    actor A as Actor
+    participant J as Journey
+    participant S1 as Step 1
+    participant S2 as Step 2
+    participant T1 as Task A
+    participant T2 as Task B
+
+    A->>J: start "Monthly Close Process"
+    J->>S1: record step (task_id=T1)
+    S1->>T1: perform Task A
+    Note right of S1: outcome=success @ 10:03:12Z
+
+    J->>S2: record step (task_id=T2)
+    S2->>T2: perform Task B
+    Note right of S2: outcome=blocked @ 10:05:47Z
+```
+
+Why retain Steps (not just Journey→Task):
+- Preserve sequence and retries (same Task can appear multiple times)
+- Capture per-attempt outcome and timestamp (telemetry)
+- Enable analytics like "untested journeys"
+- Surface gaps from missing tasks referenced by steps
+
+Terminology alignment:
+- Product (System Under Test): The boundary the Actor touches via Interactions; to CX audiences "Product" is clearer, hence "Product (System Under Test)" in diagrams
+
+---
+
+## Experience Overlay: Connecting Motivation (Goals & Experiences) to Execution
+
+We treat Goals and Experiences as the "why" behind behavior, and connect them to the "how" (Journeys → Steps → Tasks → Interactions). We distinguish expected experience (targets tied to Goals) from observed experience (feedback/telemetry captured during Steps).
+
+Conceptual mapping:
+- Persona ↔ Actor
+- Desired outcomes ↔ Goals
+- Execution path ↔ Journey (may have multiple per goal)
+- Ordered attempts ↔ Steps (outcome + time)
+- Waypoints ↔ Tasks
+- Touchpoints ↔ Interactions (product boundary)
+- Product (System Under Test) ↔ Customer-facing boundary
+
+```mermaid
+classDiagram
+    %% Core
+    class Actor
+    class Goal
+    class Journey
+    class JourneyStep {
+      +task_id
+      +outcome
+      +timestamp
+      %% optional experience fields in Phase A
+      +stage?
+      +channel?
+      +touchpoint?
+      +emotion?    // -5..+5
+      +notes?
+    }
+    class Task
+    class Interaction
+    class Product
+
+    %% Experience: Planning layer (expected)
+    class ExperienceExpectation {
+      +goal_id
+      +metric       // e.g., "sentiment", "effort"
+      +target       // e.g., ">= 0", "<= 2"
+      +stage?
+      +channel?
+      +touchpoint?
+      +notes?
+    }
+
+    %% Experience: Observation layer (observed)
+    class ExperienceObservation {
+      +journey_id
+      +step_index
+      +task_id?
+      +interaction_id?
+      +metric       // sentiment | effort | custom
+      +value        // numeric or enum
+      +stage?
+      +channel?
+      +touchpoint?
+      +notes?
+      +created_at
+    }
+
+    %% Relationships
+    Actor --> Journey : undertakes
+    Journey --> Goal : pursues
+    Journey *-- JourneyStep : ordered steps
+    JourneyStep --> Task : performs
+    Task *-- Interaction : composed of
+    Interaction --> Product : touchpoint
+
+    ExperienceExpectation --> Goal : targets
+    ExperienceObservation --> JourneyStep : observes
+    ExperienceObservation --> Interaction : at_touchpoint
+```
+
+Rationale (from our discussion):
+- Goals and Experiences are the motivation for the Actor; they must be linkable to behavior to ensure believable journeys and verify that product interactions support those motivations
+- Experience must be contextualized where behavior happens:
+  - Steps give sequence, retries, and outcomes—necessary to interpret experience
+  - Interactions anchor experience at touchpoints (product boundary) for root-cause analysis
+- Multiple paths per goal:
+  - Alternate Journeys allow different ways to realize the same Goal; comparing observed experience across paths highlights the best route or where to improve
+- Personas and adversarial modes:
+  - Constraints/abilities and optional persona/behavior tags (e.g., reluctant, hostile) change path choice and observed experience, enabling realistic modeling and testing
+- Keep the core lean:
+  - Execution core remains unchanged; Experience is an overlay shared vocabulary with CX without bloating base entities
+- Vocabulary bridge:
+  - Label the boundary as "Product (System Under Test)" to align Screenplay and customer perspectives
+
+Adoption path (non-breaking):
+- Phase A (minimal; no new entities required)
+  - Optional annotations on JourneyStep: `stage?`, `channel?`, `touchpoint?`, `emotion? (-5..+5)`, `notes?`
+  - Optional expectations at Goal level: `goal.experience_targets?: Array<{ metric; target; stage?; channel?; touchpoint?; notes? }>`
+  - Optional hints on Task/Interaction: `task.stage?`, `task.channel?`, `interaction.touchpoint_type?`
+- Phase B (structured; additive)
+  - ExperienceExpectation entity (per Goal)
+  - ExperienceObservation entity (per JourneyStep, optionally tied to Interaction)
+  - Optional: ExperienceDefinition for standardized metrics/scales
+
+Queries & visualization examples:
+- `find_experience_gaps({ goal_id? })` — compare observed vs expected; list gaps per stage/touchpoint
+- `rank_pain_points_by_touchpoint({ goal_id? })` — aggregate low sentiment/high effort by Interaction or touchpoint tag
+- `compare_persona_experience({ goal_id })` — contrast metrics across persona/behavior tags
+- `path_quality({ goal_id })` — compare alternative Journeys to the same Goal on experience metrics and success rates
+
+Visualization overlays:
+- Color Steps by observed emotion/effort
+- Annotate edges to Interactions with touchpoint/channel
+- Show Goal badges for satisfied/violated experience targets
+- Toggle "Product (System Under Test)" boundary emphasis for CX audiences
+
+---
+
 ## Open Decisions
 
 1. **What happens when model grows to 100+ nodes?** Do we auto-hide low-priority goals? Cluster by actor?

@@ -32,6 +32,11 @@ classDiagram
     Question --> SystemUnderTest : about state of
 ```
 
+### Navigator & Experience Overlays
+
+- See SPEC: [Navigator Overlay: Journeys & Steps](./SPEC.md#navigator-overlay-journeys--steps-across-the-screenplay-model)
+- See SPEC: [Experience Overlay: Connecting Motivation (Goals & Experiences) to Execution](./SPEC.md#experience-overlay-connecting-motivation-goals--experiences-to-execution)
+
 ## For Users
 
 ### Download & Install
