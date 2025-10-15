@@ -4,6 +4,34 @@ A real-time visualization tool for ensemble coding sessions. Projects a live dia
 
 ![Visualizer](media/visualizer.png)
 
+## Screenplay Pattern
+
+This diagram below illustrates the relationships between items in the Screenplay Pattern.
+
+```mermaid
+classDiagram
+    class Actor
+    class Task
+    class Interaction
+    class Ability
+    class Question
+    class SystemUnderTest
+
+    Actor --> Task : performs
+    Actor --> Interaction : performs
+    Actor o-- Ability : has
+    Actor --> Question : answers
+
+    Task *-- Interaction : made up of
+
+    Ability --> Interaction : enables
+    Ability --> Question : enables
+
+    Interaction --> SystemUnderTest : with
+    Ability --> SystemUnderTest : invokes
+    Question --> SystemUnderTest : about state of
+```
+
 ## For Users
 
 ### Download & Install
