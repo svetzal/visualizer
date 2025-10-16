@@ -137,7 +137,7 @@ sequenceDiagram
     participant Step2
     participant Task
     
-    Actor->>Journey: Start "Complete Purchase"
+    Actor->>Journey: Start Monthly Close
     Journey->>Step1: Try Task: Enter Payment
     Step1->>Task: Execute
     Task-->>Step1: outcome: blocked (card declined)
@@ -184,11 +184,11 @@ graph LR
     G[Goal: Process Refund] -->|assigned to| A1[Actor: ???]
     T[Task: Validate Return] -->|composed of| I1[Interaction: ???]
     
-    A1 -.becomes.-> Gap1[Gap: Missing Actor<br/>"Customer Service Agent"]
-    I1 -.becomes.-> Gap2[Gap: Missing Interaction<br/>"Check return policy"]
+    A1 -.becomes.-> Gap1["Gap: Missing Actor<br/>Customer Service Agent"]
+    I1 -.becomes.-> Gap2["Gap: Missing Interaction<br/>Check return policy"]
     
-    Gap1 -->|prompts team| Q1{Who handles<br/>refunds?}
-    Gap2 -->|prompts team| Q2{How do we<br/>validate returns?}
+    Gap1 -->|prompts team| Q1{"Who handles<br/>refunds?"}
+    Gap2 -->|prompts team| Q2{"How do we<br/>validate returns?"}
     
     style Gap1 fill:#ffebee,stroke:#c62828
     style Gap2 fill:#ffebee,stroke:#c62828
