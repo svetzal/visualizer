@@ -32,6 +32,16 @@ classDiagram
     Question --> SystemUnderTest : about state of
 ```
 
+### Complete Model Documentation
+
+For a comprehensive visualization showing how all pieces fit together, including:
+- How customer sentiment on interactions drives product evolution
+- How technical validations ensure soundness
+- How gap detection prompts discovery
+- How the Navigator and Experience overlays work
+
+See **[MODEL.md](./MODEL.md)** for detailed diagrams and explanations.
+
 ### Navigator & Experience Overlays
 
 - See SPEC: [Navigator Overlay: Journeys & Steps](./SPEC.md#navigator-overlay-journeys--steps-across-the-screenplay-model)
