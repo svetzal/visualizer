@@ -131,22 +131,22 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    participant Actor
-    participant Journey
-    participant Step1
-    participant Step2
-    participant Task
+    participant A as Actor
+    participant J as Journey
+    participant S1 as Step1
+    participant S2 as Step2
+    participant T as Task
     
-    Actor->>Journey: Start journey
-    Journey->>Step1: Attempt payment task
-    Step1->>Task: Execute
-    Task-->>Step1: blocked
-    Note over Step1: Sentiment -4
+    A->>J: Start
+    J->>S1: Execute payment
+    S1->>T: Run
+    T-->>S1: Blocked
+    Note right of S1: Sentiment -4
     
-    Journey->>Step2: Retry payment task
-    Step2->>Task: Execute
-    Task-->>Step2: success
-    Note over Step2: Sentiment +2
+    J->>S2: Retry payment
+    S2->>T: Run
+    T-->>S2: Success
+    Note right of S2: Sentiment +2
 ```
 
 ### 4. Experience Layer (Sentiment & Validation)
