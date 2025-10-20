@@ -5,3 +5,5 @@ dist/
 .screenplay/
 .idea
 release/
+coverage/
+.vitest/
