@@ -9,6 +9,10 @@ import {
   findUntestedJourneys,
   checkActorCanAchieveGoal,
   findUnachievableGoals,
+  findActorByName,
+  findGoalByName,
+  findTaskByName,
+  findInteractionByName,
 } from '../lib/queries.js';
 
 export function registerTools(server: FastMCP, storage: JSONStorage): void {
@@ -24,7 +28,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_actor
   server.addTool({
     name: 'define_actor',
-    description: 'Define a person, system, or service that participates in the software system. Use this when the user mentions a role, persona, external system, or service. Actors have abilities (what they can do) and constraints (what prevents them from doing things). Start every modeling session by defining actors first.',
+    description: 'Define a person, system, or service that participates in the software system. IMPORTANT: Before creating a new actor, use find_actor_by_name to check if an actor with this name already exists - this prevents duplicates. Only create if the actor is genuinely new. Actors have abilities (what they can do) and constraints (what prevents them from doing things). Start every modeling session by defining actors first.',
     parameters: z.object({
       name: z.string().describe('Display name (e.g., "Product Owner", "Payment Gateway", "Mobile App User")'),
       description: z.string().describe('Detailed context about this actor\'s role, responsibilities, or technical nature'),
@@ -52,7 +56,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_goal
   server.addTool({
     name: 'define_goal',
-    description: 'Define a desired outcome or objective that actors pursue. Use this when the user describes features, user stories, business objectives, or system capabilities. Goals should be outcome-focused (not implementation-focused). Each goal gets assigned to one or more actors who have the abilities to achieve it.',
+    description: 'Define a desired outcome or objective that actors pursue. IMPORTANT: Before creating a new goal, use find_goal_by_name to check if a goal with this name already exists - this prevents duplicates. Only create if the goal is genuinely new. Goals should be outcome-focused (not implementation-focused). Each goal gets assigned to one or more actors who have the abilities to achieve it.',
     parameters: z.object({
       name: z.string().describe('Outcome-focused name (e.g., "Complete Purchase", "Generate Monthly Report", "Onboard New User")'),
       description: z.string().describe('Detailed explanation of what achieving this goal means and why it matters'),
@@ -158,7 +162,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_task
   server.addTool({
     name: 'define_task',
-    description: 'Define a concrete activity that actors perform to achieve goals. Tasks are the "how" - they decompose goals into actionable steps. Use this when discussing specific actions, workflows, or procedures. Tasks require specific abilities (which actors must have) and are composed of lower-level interactions.',
+    description: 'Define a concrete activity that actors perform to achieve goals. IMPORTANT: Before creating a new task, use find_task_by_name to check if a task with this name already exists - this prevents duplicates. Only create if the task is genuinely new. Tasks are the "how" - they decompose goals into actionable steps. Tasks require specific abilities (which actors must have) and are composed of lower-level interactions.',
     parameters: z.object({
       name: z.string().describe('Action-oriented name (e.g., "Submit Order", "Validate Payment", "Send Confirmation Email")'),
       description: z.string().describe('Detailed explanation of what happens during this task, including any business rules or technical steps'),
@@ -219,7 +223,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_interaction
   server.addTool({
     name: 'define_interaction',
-    description: 'Define a low-level system interaction - the atomic operations that tasks are composed of. Use this for API calls, database operations, UI actions, or any technical step that changes system state. Interactions have preconditions (what must be true first) and effects (what changes as a result).',
+    description: 'Define a low-level system interaction - the atomic operations that tasks are composed of. IMPORTANT: Before creating a new interaction, use find_interaction_by_name to check if an interaction with this name already exists - this prevents duplicates. Only create if the interaction is genuinely new. Use this for API calls, database operations, UI actions, or any technical step that changes system state. Interactions have preconditions (what must be true first) and effects (what changes as a result).',
     parameters: z.object({
       name: z.string().describe('Technical name for the operation (e.g., "POST /api/orders", "Query UserTable", "Click Submit Button")'),
       description: z.string().describe('Technical details about this interaction, including protocols, data formats, or UI specifics'),
@@ -688,6 +692,68 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
         args.actor_id
       );
       return JSON.stringify(result);
+    },
+  });
+
+  // ============================================================
+  // NAME LOOKUP TOOLS - Find entities by name to prevent duplicates
+  // These tools help LLMs check if an entity already exists before creating a new one.
+  // Always use these tools before calling define_* tools to avoid duplicating entities.
+  // ============================================================
+
+  // Tool: find_actor_by_name
+  server.addTool({
+    name: 'find_actor_by_name',
+    description: 'Find an existing actor by name (case-insensitive). Use this BEFORE calling define_actor to check if an actor already exists. This prevents creating duplicate actors with the same name. Returns the existing actor if found, or null if not found.',
+    parameters: z.object({
+      name: z.string().describe('The name of the actor to search for (case-insensitive, e.g., "Payment Gateway" matches "payment gateway")'),
+    }),
+    execute: async (args) => {
+      const actors = await storage.getAll('actor') as Actor[];
+      const found = findActorByName(actors, args.name);
+      return JSON.stringify(found || null);
+    },
+  });
+
+  // Tool: find_goal_by_name
+  server.addTool({
+    name: 'find_goal_by_name',
+    description: 'Find an existing goal by name (case-insensitive). Use this BEFORE calling define_goal to check if a goal already exists. This prevents creating duplicate goals with the same name. Returns the existing goal if found, or null if not found.',
+    parameters: z.object({
+      name: z.string().describe('The name of the goal to search for (case-insensitive, e.g., "Complete Purchase" matches "complete purchase")'),
+    }),
+    execute: async (args) => {
+      const goals = await storage.getAll('goal') as Goal[];
+      const found = findGoalByName(goals, args.name);
+      return JSON.stringify(found || null);
+    },
+  });
+
+  // Tool: find_task_by_name
+  server.addTool({
+    name: 'find_task_by_name',
+    description: 'Find an existing task by name (case-insensitive). Use this BEFORE calling define_task to check if a task already exists. This prevents creating duplicate tasks with the same name. Returns the existing task if found, or null if not found.',
+    parameters: z.object({
+      name: z.string().describe('The name of the task to search for (case-insensitive, e.g., "Submit Order" matches "submit order")'),
+    }),
+    execute: async (args) => {
+      const tasks = await storage.getAll('task') as Task[];
+      const found = findTaskByName(tasks, args.name);
+      return JSON.stringify(found || null);
+    },
+  });
+
+  // Tool: find_interaction_by_name
+  server.addTool({
+    name: 'find_interaction_by_name',
+    description: 'Find an existing interaction by name (case-insensitive). Use this BEFORE calling define_interaction to check if an interaction already exists. This prevents creating duplicate interactions with the same name. Returns the existing interaction if found, or null if not found.',
+    parameters: z.object({
+      name: z.string().describe('The name of the interaction to search for (case-insensitive, e.g., "POST /api/orders" matches "post /api/orders")'),
+    }),
+    execute: async (args) => {
+      const interactions = await storage.getAll('interaction') as Interaction[];
+      const found = findInteractionByName(interactions, args.name);
+      return JSON.stringify(found || null);
     },
   });
 }
