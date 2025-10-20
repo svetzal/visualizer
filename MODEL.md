@@ -137,16 +137,16 @@ sequenceDiagram
     participant Step2
     participant Task
     
-    Actor->>Journey: Start Monthly Close
-    Journey->>Step1: Try Enter Payment Task
+    Actor->>Journey: Start journey
+    Journey->>Step1: Attempt payment task
     Step1->>Task: Execute
-    Task-->>Step1: outcome blocked (card declined)
-    Note over Step1: Sentiment -4 (frustrated)
+    Task-->>Step1: blocked
+    Note over Step1: Sentiment -4
     
-    Journey->>Step2: Retry Enter Payment Task
+    Journey->>Step2: Retry payment task
     Step2->>Task: Execute
-    Task-->>Step2: outcome success
-    Note over Step2: Sentiment +2 (relieved)
+    Task-->>Step2: success
+    Note over Step2: Sentiment +2
 ```
 
 ### 4. Experience Layer (Sentiment & Validation)
