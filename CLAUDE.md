@@ -4,9 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an Electron-based visualization tool for ensemble coding sessions. It combines a FastMCP server with a D3 force layout to display the "Screenplay" specification model as it evolves during team discussions. The visualization is designed to be **projected on a second screen** (readable from across a room) while the team works with Claude Code on screen 1.
+This is an Electron-based **conversation listener and visualizer** for ensemble coding sessions. It combines a FastMCP server with a D3 force layout to display what the team has discussed about their system. The visualization is designed to be **projected on a second screen** (readable from across a room) while the team works with you on screen 1.
 
-**Key Insight:** Gaps (missing references) are features, not bugs. The visualization surfaces what hasn't been discussed yet, prompting the team to fill in missing details.
+**Core Purpose:** This tool listens to human conversations (about requirements, problems, feedback, brainstorming) and diagrams what it has heard. It does NOT enforce a perfect model or try to eliminate gaps - instead, it faithfully captures what's been mentioned.
+
+**Key Insight:** Gaps (missing references) are **intentional features**, not bugs. When an actor is mentioned but not defined, or a task references an interaction that hasn't been discussed, a red "?" gap node appears. These gaps are visual prompts that encourage the team to elaborate and create a cohesive system definition through conversation.
 
 ## Common Commands
 

@@ -1,6 +1,8 @@
 # Screenplay Visualizer
 
-A real-time visualization tool for ensemble coding sessions. Projects a live diagram of your system's actors, goals, tasks, and interactions as your favourite MCP-enabled agent (Github Copilot, Claude Code, Windsurf, etc.) builds the model from your team's conversation.
+A real-time **conversation listener** and visualizer for ensemble coding sessions. As your team discusses requirements, problems, or ideas, this tool captures what's been said and projects a live diagram on a second screen. Your MCP-enabled agent (Github Copilot, Claude Code, Windsurf, etc.) listens to the conversation and creates the visualization in real-time.
+
+**Core Philosophy:** This tool doesn't enforce a perfect model - it **listens and diagrams what it hears**. Gaps (missing connections) are intentional features that visually prompt the team to elaborate on undefined concepts. The goal is to keep everyone synchronized on what's been discussed and surface what needs more conversation.
 
 ![Visualizer](media/visualizer.png)
 
@@ -57,15 +59,15 @@ Alternatively, see the Developer section below to run from source.
 
 ### What It Does
 
-The Screenplay Visualizer runs an MCP (Model Context Protocol) server that your agent connects to during ensemble coding sessions. As your team discusses the system you're building, your agent creates entities in real-time:
+The Screenplay Visualizer is a **conversation listener** that creates a live diagram of your team's discussion. It runs an MCP (Model Context Protocol) server that your agent connects to during ensemble coding sessions. As your team talks about requirements, problems, feedback, or brainstorms ideas, the agent captures what's been mentioned:
 
-- **Actors** (blue circles) - People or systems that interact
-- **Goals** (green squares) - What actors want to achieve
-- **Tasks** (purple triangles) - How goals are accomplished
-- **Interactions** (orange diamonds) - Atomic actions that compose tasks
-- **Gaps** (red dashed "?" circles) - Missing pieces that need discussion
+- **Actors** (blue circles) - People or systems mentioned in the discussion
+- **Goals** (green squares) - Desired outcomes or objectives discussed
+- **Tasks** (purple triangles) - Activities or workflows mentioned
+- **Interactions** (orange diamonds) - Technical details or operations described
+- **Gaps** (red dashed "?" circles) - **Important:** Things referenced but not yet discussed - these prompt the team to elaborate
 
-The visualization updates within 1 second of any change, keeping the entire team synchronized on what's being discussed.
+The visualization updates within 1 second of any change, keeping the entire team synchronized on what's being discussed. **Gaps are features, not bugs** - they surface what needs more conversation.
 
 ### How To Use
 
@@ -75,7 +77,7 @@ The visualization updates within 1 second of any change, keeping the entire team
 4. **Start your ensemble session** - As your agent processes your conversation, entities appear in real-time
 5. **Project on second screen** - The visualization is designed to be readable from across the room
 
-**Gap-Driven Development:** Red "?" nodes appear when you reference something not yet defined (e.g., "the payment processor handles this" before you've discussed the payment processor). This prompts the team to fill in missing details.
+**Gap-Driven Development:** Red "?" nodes appear when you reference something not yet defined (e.g., "the payment processor handles this" before you've discussed the payment processor). **This is intentional and valuable** - gaps visually prompt the team to notice what hasn't been elaborated yet and encourage further discussion to create a cohesive system definition.
 
 ### Data Storage
 

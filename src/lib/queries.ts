@@ -3,7 +3,7 @@
  * These functions analyze the screenplay model to surface insights.
  */
 
-import { Actor, Goal, Task, Journey } from './schemas.js';
+import { Actor, Goal, Task, Interaction, Journey } from './schemas.js';
 
 // ============================================================
 // Query Result Types
@@ -253,4 +253,52 @@ export function findUnachievableGoals(
   }
 
   return unachievable;
+}
+
+/**
+ * Find an actor by name (case-insensitive).
+ *
+ * @param actors - All actors in the model
+ * @param name - The name to search for
+ * @returns The actor with matching name, or undefined if not found
+ */
+export function findActorByName(actors: Actor[], name: string): Actor | undefined {
+  const normalizedName = name.toLowerCase().trim();
+  return actors.find(actor => actor.name.toLowerCase().trim() === normalizedName);
+}
+
+/**
+ * Find a goal by name (case-insensitive).
+ *
+ * @param goals - All goals in the model
+ * @param name - The name to search for
+ * @returns The goal with matching name, or undefined if not found
+ */
+export function findGoalByName(goals: Goal[], name: string): Goal | undefined {
+  const normalizedName = name.toLowerCase().trim();
+  return goals.find(goal => goal.name.toLowerCase().trim() === normalizedName);
+}
+
+/**
+ * Find a task by name (case-insensitive).
+ *
+ * @param tasks - All tasks in the model
+ * @param name - The name to search for
+ * @returns The task with matching name, or undefined if not found
+ */
+export function findTaskByName(tasks: Task[], name: string): Task | undefined {
+  const normalizedName = name.toLowerCase().trim();
+  return tasks.find(task => task.name.toLowerCase().trim() === normalizedName);
+}
+
+/**
+ * Find an interaction by name (case-insensitive).
+ *
+ * @param interactions - All interactions in the model
+ * @param name - The name to search for
+ * @returns The interaction with matching name, or undefined if not found
+ */
+export function findInteractionByName(interactions: Interaction[], name: string): Interaction | undefined {
+  const normalizedName = name.toLowerCase().trim();
+  return interactions.find(interaction => interaction.name.toLowerCase().trim() === normalizedName);
 }
