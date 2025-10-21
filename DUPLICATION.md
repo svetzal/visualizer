@@ -2,7 +2,9 @@
 
 ## Problem Statement
 
-During ensemble coding sessions with LLMs, entities (actors, goals, tasks, interactions) are frequently duplicated in the visualization. Models with the same name are created multiple times because the system uses UUIDs as identifiers and has no deduplication mechanisms. This creates confusion and visual clutter, undermining the visualization's value as a shared understanding tool.
+During ensemble coding sessions, the visualization sometimes creates multiple entities with the same name. This occurs because the system listens to human conversation and creates entities as concepts are mentioned, using UUIDs for identity. While the system is designed to surface gaps (missing discussions), unintentional duplicate entities with identical names can create visual noise that obscures the valuable gaps.
+
+**Important Context:** This tool is a **conversation listener** that visualizes what has been heard in real-time. Gaps (missing references) are intentional features that prompt teams to elaborate on undefined concepts. The goal is to reduce *unintentional* duplicates (same name, different UUID) while preserving the system's core purpose of surfacing what hasn't been discussed yet.
 
 ## Root Cause Analysis
 
@@ -27,11 +29,11 @@ After examining the codebase, the duplication issue stems from several architect
 - When discussing a concept again after several turns, LLMs may recreate rather than reference
 - The visualization updates provide feedback but not programmatic signals to the LLM
 
-### 4. **Tool Descriptions Don't Discourage Creation**
-- Tool descriptions in `src/mcp-server/tools.ts` say "Use this when the user mentions X"
-- No guidance to "check if X already exists before creating"
-- Descriptions emphasize what to create, not when to reuse
-- Gap-oriented design philosophy (intentionally allows non-existent references) reinforces creation over lookup
+### 4. **Tool Descriptions Reflect Conversational Capture**
+- Tool descriptions in `src/mcp-server/tools.ts` appropriately say "Use this when the user mentions X"
+- The system is designed to capture what's heard in conversation, not enforce a normalized data model
+- Gap-oriented design philosophy intentionally allows non-existent references to surface missing discussions
+- Challenge: Balance between capturing repeated mentions vs. recognizing the same concept
 
 ## Three Mitigation Approaches
 
@@ -39,7 +41,7 @@ After examining the codebase, the duplication issue stems from several architect
 
 ## Approach 1: Name-Based Entity Resolution (Minimal Change)
 
-**Strategy:** Add name-based lookup tools and modify tool descriptions to encourage checking before creating.
+**Strategy:** Add name-based lookup tools to help LLMs recognize when the same concept has been mentioned before, reducing unintentional duplicates while preserving the conversational capture model.
 
 ### Changes Required
 
@@ -51,10 +53,10 @@ After examining the codebase, the duplication issue stems from several architect
    - find_interaction_by_name(name: string) → Interaction | null
    ```
 
-2. **Modify creation tool descriptions** to include guidance:
+2. **Optionally update tool descriptions** to mention lookup tools:
    ```
-   "Before creating, use find_X_by_name to check if this entity already exists.
-   Only create if the entity is genuinely new."
+   "When a concept is mentioned in conversation, create an entity to capture it.
+   If unsure whether this concept was mentioned before, use find_X_by_name to check."
    ```
 
 3. **Optional: Add case-insensitive fuzzy matching** to help find near-matches:
@@ -65,16 +67,16 @@ After examining the codebase, the duplication issue stems from several architect
 ### Pros
 - ✅ Minimal code changes (add ~150 lines of new tools)
 - ✅ Backward compatible (existing tools unchanged)
-- ✅ LLMs can explicitly check before creating
-- ✅ Works within current architecture
+- ✅ LLMs can check when needed without being forced to
+- ✅ Works within current conversational capture architecture
 - ✅ No storage layer changes needed
+- ✅ Preserves gap-driven development model
 
 ### Cons
-- ❌ Still relies on LLM discipline (must remember to check)
-- ❌ Adds cognitive load: every create requires a preceding lookup
-- ❌ Doesn't solve the root issue: LLMs forgetting context
-- ❌ Name collisions still possible if LLM ignores guidance
-- ❌ Increases tool count (32 → 36+), making selection harder
+- ❌ Still relies on LLM judgment (when to check vs. when to create)
+- ❌ Adds tool count (32 → 36+), slightly more options for LLM
+- ❌ Doesn't prevent all duplicates - only those the LLM recognizes
+- ❌ May not align with pure "conversation listener" philosophy
 
 ### Implementation Effort
 **Low (2-4 hours):** Add query functions to `src/lib/queries.ts`, register new tools in `src/mcp-server/tools.ts`, update tool descriptions.

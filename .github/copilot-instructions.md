@@ -2,9 +2,11 @@
 
 ## Project Overview
 
-This is an **Electron app with embedded MCP server** for real-time visualization of ensemble coding sessions. As teams discuss system design with AI agents (Claude Code, GitHub Copilot, etc.), entities appear as nodes in a D3 force-directed graph projected on a second screen. Updates must complete within **<1s from MCP tool call to visible change**.
+This is an **Electron app with embedded MCP server** for real-time visualization of ensemble coding sessions. **Core Purpose: This is a conversation listener** that captures what a team says during discussions about requirements, problems, feedback, or brainstorming, and visualizes it in real-time.
 
-**Key Insight:** Gaps (missing references) are features, not bugs. Red "?" nodes surface what hasn't been discussed yet, prompting teams to fill in missing details.
+As teams discuss system design with AI agents (Claude Code, GitHub Copilot, etc.), entities appear as nodes in a D3 force-directed graph projected on a second screen. Updates must complete within **<1s from MCP tool call to visible change**.
+
+**CRITICAL Philosophy:** This tool does NOT enforce a perfect normalized model. It listens to conversations and diagrams what it hears. Duplicate mentions are natural in conversation. Gaps (missing references) are **intentional features** - red "?" nodes that visually prompt teams to elaborate on undefined concepts. The tool surfaces what hasn't been discussed yet, encouraging teams to fill in missing details through further conversation.
 
 ## Architecture at a Glance
 

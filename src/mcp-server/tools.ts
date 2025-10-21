@@ -28,7 +28,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_actor
   server.addTool({
     name: 'define_actor',
-    description: 'Define a person, system, or service that participates in the software system. IMPORTANT: Before creating a new actor, use find_actor_by_name to check if an actor with this name already exists - this prevents duplicates. Only create if the actor is genuinely new. Actors have abilities (what they can do) and constraints (what prevents them from doing things). Start every modeling session by defining actors first.',
+    description: 'Capture an actor (person, system, or service) mentioned in the conversation. Use this when someone refers to a role, persona, external system, or service. The visualization will show this actor and any gaps (missing connections) to prompt further discussion. Actors have abilities (what they can do) and constraints (what prevents them). If you think this actor may have been mentioned before, you can use find_actor_by_name first, but it\'s okay to create if you\'re capturing what was said.',
     parameters: z.object({
       name: z.string().describe('Display name (e.g., "Product Owner", "Payment Gateway", "Mobile App User")'),
       description: z.string().describe('Detailed context about this actor\'s role, responsibilities, or technical nature'),
@@ -56,7 +56,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_goal
   server.addTool({
     name: 'define_goal',
-    description: 'Define a desired outcome or objective that actors pursue. IMPORTANT: Before creating a new goal, use find_goal_by_name to check if a goal with this name already exists - this prevents duplicates. Only create if the goal is genuinely new. Goals should be outcome-focused (not implementation-focused). Each goal gets assigned to one or more actors who have the abilities to achieve it.',
+    description: 'Capture a goal or desired outcome mentioned in the conversation. Use this when someone describes what they want to achieve, a feature, user story, or business objective. Goals should be outcome-focused (not implementation-focused). Each goal can be assigned to actors; if you reference actors not yet defined, the visualization will show gaps to prompt discussion about who can achieve this goal.',
     parameters: z.object({
       name: z.string().describe('Outcome-focused name (e.g., "Complete Purchase", "Generate Monthly Report", "Onboard New User")'),
       description: z.string().describe('Detailed explanation of what achieving this goal means and why it matters'),
@@ -162,7 +162,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_task
   server.addTool({
     name: 'define_task',
-    description: 'Define a concrete activity that actors perform to achieve goals. IMPORTANT: Before creating a new task, use find_task_by_name to check if a task with this name already exists - this prevents duplicates. Only create if the task is genuinely new. Tasks are the "how" - they decompose goals into actionable steps. Tasks require specific abilities (which actors must have) and are composed of lower-level interactions.',
+    description: 'Capture a task or activity mentioned in the conversation. Use this when someone describes specific actions, workflows, or procedures. Tasks are the "how" - concrete steps actors perform. Tasks can reference interactions that compose them; if those interactions aren\'t defined yet, gaps will appear to prompt elaboration. Tasks require specific abilities that actors must possess.',
     parameters: z.object({
       name: z.string().describe('Action-oriented name (e.g., "Submit Order", "Validate Payment", "Send Confirmation Email")'),
       description: z.string().describe('Detailed explanation of what happens during this task, including any business rules or technical steps'),
@@ -223,7 +223,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: define_interaction
   server.addTool({
     name: 'define_interaction',
-    description: 'Define a low-level system interaction - the atomic operations that tasks are composed of. IMPORTANT: Before creating a new interaction, use find_interaction_by_name to check if an interaction with this name already exists - this prevents duplicates. Only create if the interaction is genuinely new. Use this for API calls, database operations, UI actions, or any technical step that changes system state. Interactions have preconditions (what must be true first) and effects (what changes as a result).',
+    description: 'Capture a low-level system interaction mentioned in the conversation - the atomic operations that tasks are built from. Use this when someone describes technical details like API calls, database operations, UI actions, or state changes. Interactions have preconditions (what must be true first) and effects (what changes). These compose into tasks.',
     parameters: z.object({
       name: z.string().describe('Technical name for the operation (e.g., "POST /api/orders", "Query UserTable", "Click Submit Button")'),
       description: z.string().describe('Technical details about this interaction, including protocols, data formats, or UI specifics'),
@@ -696,15 +696,16 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   });
 
   // ============================================================
-  // NAME LOOKUP TOOLS - Find entities by name to prevent duplicates
-  // These tools help LLMs check if an entity already exists before creating a new one.
-  // Always use these tools before calling define_* tools to avoid duplicating entities.
+  // NAME LOOKUP TOOLS - Optional helpers for checking previous mentions
+  // These tools help LLMs find entities that may have been mentioned earlier in the conversation.
+  // Use these when you want to check if a concept has already been captured, but it's fine
+  // to create new entities if you're documenting what was just said in the conversation.
   // ============================================================
 
   // Tool: find_actor_by_name
   server.addTool({
     name: 'find_actor_by_name',
-    description: 'Find an existing actor by name (case-insensitive). Use this BEFORE calling define_actor to check if an actor already exists. This prevents creating duplicate actors with the same name. Returns the existing actor if found, or null if not found.',
+    description: 'Check if an actor with this name was mentioned earlier in the conversation (case-insensitive). Use this when you want to reference a previously mentioned actor instead of creating a new one. Returns the actor if found, or null if not yet captured. Note: It\'s okay to create duplicates if you\'re capturing what was just said - the visualization helps teams notice when they\'re discussing the same concept multiple times.',
     parameters: z.object({
       name: z.string().describe('The name of the actor to search for (case-insensitive, e.g., "Payment Gateway" matches "payment gateway")'),
     }),
@@ -718,7 +719,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: find_goal_by_name
   server.addTool({
     name: 'find_goal_by_name',
-    description: 'Find an existing goal by name (case-insensitive). Use this BEFORE calling define_goal to check if a goal already exists. This prevents creating duplicate goals with the same name. Returns the existing goal if found, or null if not found.',
+    description: 'Check if a goal with this name was mentioned earlier in the conversation (case-insensitive). Use this when you want to reference a previously mentioned goal instead of creating a new one. Returns the goal if found, or null if not yet captured.',
     parameters: z.object({
       name: z.string().describe('The name of the goal to search for (case-insensitive, e.g., "Complete Purchase" matches "complete purchase")'),
     }),
@@ -732,7 +733,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: find_task_by_name
   server.addTool({
     name: 'find_task_by_name',
-    description: 'Find an existing task by name (case-insensitive). Use this BEFORE calling define_task to check if a task already exists. This prevents creating duplicate tasks with the same name. Returns the existing task if found, or null if not found.',
+    description: 'Check if a task with this name was mentioned earlier in the conversation (case-insensitive). Use this when you want to reference a previously mentioned task instead of creating a new one. Returns the task if found, or null if not yet captured.',
     parameters: z.object({
       name: z.string().describe('The name of the task to search for (case-insensitive, e.g., "Submit Order" matches "submit order")'),
     }),
@@ -746,7 +747,7 @@ export function registerTools(server: FastMCP, storage: JSONStorage): void {
   // Tool: find_interaction_by_name
   server.addTool({
     name: 'find_interaction_by_name',
-    description: 'Find an existing interaction by name (case-insensitive). Use this BEFORE calling define_interaction to check if an interaction already exists. This prevents creating duplicate interactions with the same name. Returns the existing interaction if found, or null if not found.',
+    description: 'Check if an interaction with this name was mentioned earlier in the conversation (case-insensitive). Use this when you want to reference a previously mentioned interaction instead of creating a new one. Returns the interaction if found, or null if not yet captured.',
     parameters: z.object({
       name: z.string().describe('The name of the interaction to search for (case-insensitive, e.g., "POST /api/orders" matches "post /api/orders")'),
     }),
