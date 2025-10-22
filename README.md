@@ -6,6 +6,17 @@ A real-time **conversation listener** and visualizer for ensemble coding session
 
 ![Visualizer](media/visualizer.png)
 
+## Visualization
+
+The app uses **[ReactFlow](https://reactflow.dev/)** for an interactive, real-time visualization. Each entity type (Actor, Goal, Task, Interaction) is rendered as a distinct, interactive React component. Features include:
+
+- **Double-click to edit**: Click any node to edit its name inline
+- **Interactive controls**: Zoom, pan, minimap for easy navigation
+- **Real-time updates**: Visualization updates instantly as you discuss and define entities
+- **Gap detection**: Missing entities show as red "?" nodes, prompting further discussion
+
+See **[REACTFLOW.md](./REACTFLOW.md)** for detailed documentation about the visualization system.
+
 ## Screenplay Pattern
 
 This diagram below illustrates the relationships between items in the Screenplay Pattern. The pattern focuses on **user-centric modeling** - capturing how actors (people or systems) interact with a product to achieve their goals and deliver desired experiences.
