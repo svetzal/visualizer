@@ -8,7 +8,7 @@ A real-time **conversation listener** and visualizer for ensemble coding session
 
 ## Screenplay Pattern
 
-This diagram below illustrates the relationships between items in the Screenplay Pattern.
+This diagram below illustrates the relationships between items in the Screenplay Pattern. The pattern focuses on **user-centric modeling** - capturing how actors (people or systems) interact with a product to achieve their goals and deliver desired experiences.
 
 ```mermaid
 classDiagram
@@ -17,7 +17,7 @@ classDiagram
     class Interaction
     class Ability
     class Question
-    class SystemUnderTest
+    class Product
 
     Actor --> Task : performs
     Actor --> Interaction : performs
@@ -29,10 +29,12 @@ classDiagram
     Ability --> Interaction : enables
     Ability --> Question : enables
 
-    Interaction --> SystemUnderTest : with
-    Ability --> SystemUnderTest : invokes
-    Question --> SystemUnderTest : about state of
+    Interaction --> Product : with
+    Ability --> Product : invokes
+    Question --> Product : about state of
 ```
+
+**Product-Centric Focus:** The Screenplay pattern evolved from PageObjects to be more user-centric. Rather than thinking about "systems under test" (a tester-centric view), we model the **Product** and how actors experience it. This tool helps teams capture requirements for intended experiences, visualize what's been discussed, and surface gaps in understanding that need further conversation.
 
 ### Complete Model Documentation
 
@@ -59,15 +61,15 @@ Alternatively, see the Developer section below to run from source.
 
 ### What It Does
 
-The Screenplay Visualizer is a **conversation listener** that creates a live diagram of your team's discussion. It runs an MCP (Model Context Protocol) server that your agent connects to during ensemble coding sessions. As your team talks about requirements, problems, feedback, or brainstorms ideas, the agent captures what's been mentioned:
+The Screenplay Visualizer is a **conversation listener** that creates a live diagram of your team's discussion about product requirements and user experiences. It runs an MCP (Model Context Protocol) server that your agent connects to during ensemble coding sessions. As your team talks about requirements, problems, feedback, or brainstorms ideas about how users will experience the product, the agent captures what's been mentioned:
 
-- **Actors** (blue circles) - People or systems mentioned in the discussion
-- **Goals** (green squares) - Desired outcomes or objectives discussed
-- **Tasks** (purple triangles) - Activities or workflows mentioned
-- **Interactions** (orange diamonds) - Technical details or operations described
+- **Actors** (blue circles) - People or systems who interact with the product
+- **Goals** (green squares) - Desired outcomes or experiences users want to achieve
+- **Tasks** (purple triangles) - Activities users perform to accomplish their goals
+- **Interactions** (orange diamonds) - Touchpoints where users interact with the product
 - **Gaps** (red dashed "?" circles) - **Important:** Things referenced but not yet discussed - these prompt the team to elaborate
 
-The visualization updates within 1 second of any change, keeping the entire team synchronized on what's being discussed. **Gaps are features, not bugs** - they surface what needs more conversation.
+The visualization updates within 1 second of any change, keeping the entire team synchronized on what product experiences have been discussed. **Gaps are features, not bugs** - they surface aspects of the user experience that need more conversation.
 
 ### How To Use
 
@@ -77,7 +79,7 @@ The visualization updates within 1 second of any change, keeping the entire team
 4. **Start your ensemble session** - As your agent processes your conversation, entities appear in real-time
 5. **Project on second screen** - The visualization is designed to be readable from across the room
 
-**Gap-Driven Development:** Red "?" nodes appear when you reference something not yet defined (e.g., "the payment processor handles this" before you've discussed the payment processor). **This is intentional and valuable** - gaps visually prompt the team to notice what hasn't been elaborated yet and encourage further discussion to create a cohesive system definition.
+**Gap-Driven Development:** Red "?" nodes appear when you reference something not yet defined (e.g., "users interact with the payment processor" before you've discussed how the payment processor works). **This is intentional and valuable** - gaps visually prompt the team to notice aspects of the product experience that haven't been elaborated yet and encourage further discussion to create a cohesive understanding of how users will experience the system.
 
 ### Data Storage
 
