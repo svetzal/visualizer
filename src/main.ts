@@ -68,7 +68,7 @@ async function createWindow(): Promise<void> {
   }
 
   // Open DevTools to debug (always open for now)
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // Send server URL whenever the page finishes loading (including refreshes)
   mainWindow.webContents.on('did-finish-load', () => {
