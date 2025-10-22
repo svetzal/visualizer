@@ -87,7 +87,7 @@ describe('JSONStorage', () => {
         abilities: ['ability1', 'ability2'],
       });
 
-      const updated = await storage.get('actor', actorId);
+      const updated = await storage.get('actor', actorId) as Actor;
       expect(updated?.name).toBe('Updated Name');
       expect(updated?.abilities).toContain('ability2');
     });
