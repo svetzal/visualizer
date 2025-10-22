@@ -5,10 +5,10 @@
   "type": "module",
   "main": "dist/bootstrap.js",
   "scripts": {
-    "build": "tsc && tsc -p tsconfig.preload.json",
+    "build": "tsc && tsc -p tsconfig.preload.json && node build.mjs",
     "start": "npm run build && electron .",
     "dev": "npm run build && electron .",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf dist renderer/bundle.js renderer/bundle.js.map",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
@@ -30,18 +30,25 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",
+    "@xyflow/react": "^12.9.0",
     "d3": "^7.8.5",
     "fastmcp": "^3.19.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "reactflow": "^11.11.4",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
     "@types/node": "^20.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
     "@types/uuid": "^9.0.7",
     "@vitest/ui": "^3.2.4",
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
+    "esbuild": "^0.25.11",
     "typescript": "^5.3.3",
     "vitest": "^3.2.4"
   },

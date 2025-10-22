@@ -7,3 +7,5 @@ dist/
 release/
 coverage/
 .vitest/
+renderer/bundle.js
+renderer/bundle.js.map
