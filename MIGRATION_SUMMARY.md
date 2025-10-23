@@ -104,7 +104,7 @@ Total latency: <1 second (same as D3)
 
 | Feature | D3 Implementation | ReactFlow Implementation |
 |---------|-------------------|--------------------------|
-| **Layout** | Force-directed (automatic) | Column-based (static) |
+| **Layout** | Force-directed (automatic) | Dagre hierarchical (automatic) |
 | **Node shapes** | SVG paths | React components |
 | **Interactivity** | Drag only | Zoom, pan, drag, edit |
 | **Editing** | Click → tooltip | Double-click → inline |
@@ -114,6 +114,7 @@ Total latency: <1 second (same as D3)
 | **Maintainability** | Complex D3 API | Simple React components |
 | **Extensibility** | Manual SVG code | Component props |
 | **Real-time updates** | <1s | <1s |
+| **Clustering** | Manual force parameters | Automatic graph analysis |
 
 ## New Interactive Features
 
@@ -191,17 +192,11 @@ Total latency: <1 second (same as D3)
 
 ## Known Limitations
 
-### Layout System
-- **Current**: Simple column-based layout
-- **Issue**: Doesn't adapt to graph structure
-- **Workaround**: Use fit-to-view button
-- **Future**: Implement force-directed or hierarchical layout
-
 ### Node Positioning
 - **Current**: Positions reset on reload
 - **Issue**: No persistence of user arrangements
-- **Workaround**: N/A
-- **Future**: Save positions to storage
+- **Workaround**: N/A (dagre recalculates on each load)
+- **Future**: Save positions to storage for manual overrides
 
 ### Inline Editing
 - **Current**: Console.log only
@@ -213,7 +208,7 @@ Total latency: <1 second (same as D3)
 
 ### Short-term (v1.2)
 1. **Save inline edits** - IPC call to update entities
-2. **Better layout** - Implement Dagre for hierarchical layout
+2. **Layout animations** - Smooth transitions when graph changes
 3. **Node details panel** - Click to expand sidebar with full info
 
 ### Medium-term (v1.3)
@@ -221,12 +216,13 @@ Total latency: <1 second (same as D3)
 5. **Search** - Find nodes by name
 6. **Export** - Save as PNG/SVG
 7. **Themes** - Light/dark mode
+8. **Alternative layouts** - Force-directed, circular options
 
 ### Long-term (v2.0)
-8. **Collaborative editing** - Real-time multi-user
-9. **Undo/Redo** - Track changes
-10. **Custom layout algorithms** - Domain-specific layouts
-11. **Performance optimizations** - Virtual rendering for 10K+ nodes
+9. **Collaborative editing** - Real-time multi-user
+10. **Undo/Redo** - Track changes
+11. **Custom layout algorithms** - Domain-specific layouts
+12. **Performance optimizations** - Virtual rendering for 10K+ nodes
 
 ## Migration Checklist
 

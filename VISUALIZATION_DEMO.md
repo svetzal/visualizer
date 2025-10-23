@@ -13,20 +13,41 @@ This document describes what the new ReactFlow visualization looks like with the
 
 ## Visual Layout
 
-The visualization uses a **column-based layout** with nodes arranged left-to-right:
+The visualization uses **dagre hierarchical layout** that organizes nodes based on their connections:
 
 ```
-Column 1 (x=100)     Column 2 (x=400)    Column 3 (x=700)     Column 4 (x=1000)
-┌─────────────┐      ┌─────────────┐     ┌─────────────┐      ┌─────────────┐
-│   ACTORS    │      │    GOALS    │     │    TASKS    │      │ INTERACTIONS│
-│             │      │             │     │             │      │             │
-│   🔵 User   │──────▶ 🟩 Login   │────▶ 🟣 Sign In  │─────▶ 🟧 Enter    │
-│             │      │             │     │             │      │    Creds    │
-│   🔵 Admin  │      │ 🟩 Manage   │     │             │      │             │
-│             │      │             │     │             │      │ 🟧 Submit   │
-│             │      │             │     │             │      │             │
-└─────────────┘      └─────────────┘     └─────────────┘      └─────────────┘
+          ┌─────────────┐
+          │   Customer  │ (Actor)
+          │   🔵       │
+          └──────┬──────┘
+                 │
+                 ▼
+          ┌─────────────┐
+          │   Complete  │ (Goal)
+          │   Purchase  │
+          │   🟩       │
+          └──────┬──────┘
+                 │
+                 ▼
+          ┌─────────────┐
+          │   Shop for  │ (Task)
+          │   Items     │
+          │   🟣       │
+          └──────┬──────┘
+                 │
+                 ▼
+          ┌─────────────┐
+          │   Add to    │ (Interaction)
+          │   Cart      │
+          │   🟧       │
+          └─────────────┘
 ```
+
+Nodes are automatically positioned to:
+- Keep connected nodes close together
+- Minimize line crossings
+- Create clear hierarchical flows
+- Maintain readable spacing
 
 ## Node Styles
 

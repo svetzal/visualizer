@@ -64,24 +64,43 @@ renderer/
 
 ## Layout Engine
 
-The current implementation uses a simple **column-based layout**:
+The visualization uses **dagre** for automatic hierarchical graph layout. This algorithm:
 
-1. **Column 1** (x=100): Actors
-2. **Column 2** (x=400): Goals
-3. **Column 3** (x=700): Tasks
-4. **Column 4** (x=1000): Interactions
-5. **Scattered**: Gaps (random positions to draw attention)
+1. **Analyzes the graph structure** - Examines nodes and edges to understand relationships
+2. **Creates a hierarchy** - Organizes nodes in ranks based on edge direction
+3. **Minimizes edge crossings** - Positions nodes to reduce visual clutter
+4. **Groups connected nodes** - Places related nodes close together
+5. **Maintains consistent spacing** - Ensures non-overlapping nodes with proper margins
 
-Nodes are spaced 150px vertically within each column.
+### Layout Configuration
 
-### Future Improvements
+```typescript
+dagreGraph.setGraph({
+  rankdir: 'LR',  // Left-to-right layout direction
+  align: 'UL',    // Align nodes to upper-left within ranks
+  nodesep: 80,    // Horizontal spacing between nodes (px)
+  ranksep: 150,   // Vertical spacing between ranks (px)
+  marginx: 50,    // Left/right margins
+  marginy: 50,    // Top/bottom margins
+});
+```
 
-The column-based layout is intentionally simple. Future enhancements could include:
+### Node Dimensions
 
-- **Force-directed layout**: Use ReactFlow's layout algorithms for organic positioning
-- **Hierarchical layout**: Arrange nodes in a tree structure based on relationships
-- **Custom algorithms**: Implement domain-specific layouts (e.g., workflow-oriented)
-- **User positioning**: Allow users to manually arrange nodes (positions persist)
+Each node type has specific dimensions for accurate layout:
+- **Actor**: 140×140px (circle)
+- **Goal**: 170×100px (rectangle)
+- **Task**: 150×90px (hexagon)
+- **Interaction**: 140×140px (diamond)
+- **Gap**: 110×110px (dashed circle)
+
+### Benefits
+
+✅ **Self-organizing** - Graph arranges itself based on actual connections
+✅ **Cluster visibility** - Related nodes naturally group together
+✅ **Minimal edge crossings** - Clean, readable graph structure
+✅ **Consistent spacing** - Professional, predictable layout
+✅ **Scales well** - Handles complex graphs with many connections
 
 ## Edges
 

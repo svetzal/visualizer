@@ -12,6 +12,7 @@ import {
   Position,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import dagre from 'dagre';
 
 import ActorNode from './nodes/ActorNode';
 import GoalNode from './nodes/GoalNode';
@@ -304,73 +305,71 @@ const ReactFlowApp: React.FC = () => {
     return edgeList;
   }, [model]);
 
-  // Simple auto-layout algorithm
-  const computeLayout = useCallback((nodeList: any[]) => {
-    const width = window.innerWidth;
-    const height = window.innerHeight - 150;
-    
-    // Group nodes by type
-    const actorNodes = nodeList.filter(n => n.type === 'actor');
-    const goalNodes = nodeList.filter(n => n.type === 'goal');
-    const taskNodes = nodeList.filter(n => n.type === 'task');
-    const interactionNodes = nodeList.filter(n => n.type === 'interaction');
-    const gapNodes = nodeList.filter(n => n.type === 'gap');
+  // Dynamic layout algorithm using dagre for hierarchical graph layout
+  const computeLayout = useCallback((nodeList: any[], edgeList: Edge[]) => {
+    // Create a new directed graph
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-    const layouted: Node[] = [];
-    let yOffset = 100;
-    const columnSpacing = 300;
-
-    // Column 1: Actors
-    actorNodes.forEach((node, i) => {
-      layouted.push({
-        ...node,
-        position: { x: 100, y: yOffset + i * 150 },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-      });
+    // Configure the graph layout
+    dagreGraph.setGraph({
+      rankdir: 'LR', // Left to right layout
+      align: 'UL',   // Align to upper-left
+      nodesep: 80,   // Horizontal spacing between nodes
+      ranksep: 150,  // Vertical spacing between ranks
+      marginx: 50,
+      marginy: 50,
     });
 
-    // Column 2: Goals
-    goalNodes.forEach((node, i) => {
-      layouted.push({
-        ...node,
-        position: { x: 100 + columnSpacing, y: yOffset + i * 150 },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-      });
+    // Define node dimensions based on type
+    const getNodeDimensions = (type: string) => {
+      switch (type) {
+        case 'actor':
+          return { width: 140, height: 140 }; // Circle
+        case 'goal':
+          return { width: 170, height: 100 }; // Rectangle
+        case 'task':
+          return { width: 150, height: 90 }; // Hexagon
+        case 'interaction':
+          return { width: 140, height: 140 }; // Diamond
+        case 'gap':
+          return { width: 110, height: 110 }; // Dashed circle
+        default:
+          return { width: 150, height: 100 };
+      }
+    };
+
+    // Add nodes to the graph
+    nodeList.forEach((node) => {
+      const dimensions = getNodeDimensions(node.type);
+      dagreGraph.setNode(node.id, dimensions);
     });
 
-    // Column 3: Tasks
-    taskNodes.forEach((node, i) => {
-      layouted.push({
-        ...node,
-        position: { x: 100 + columnSpacing * 2, y: yOffset + i * 150 },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-      });
+    // Add edges to the graph
+    edgeList.forEach((edge) => {
+      dagreGraph.setEdge(edge.source, edge.target);
     });
 
-    // Column 4: Interactions
-    interactionNodes.forEach((node, i) => {
-      layouted.push({
+    // Calculate the layout
+    dagre.layout(dagreGraph);
+
+    // Apply the calculated positions to nodes
+    const layoutedNodes: Node[] = nodeList.map((node) => {
+      const nodeWithPosition = dagreGraph.node(node.id);
+      
+      return {
         ...node,
-        position: { x: 100 + columnSpacing * 3, y: yOffset + i * 150 },
+        position: {
+          x: nodeWithPosition.x - nodeWithPosition.width / 2,
+          y: nodeWithPosition.y - nodeWithPosition.height / 2,
+        },
+        // Set handle positions based on layout direction
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
-      });
+      };
     });
 
-    // Gaps scattered
-    gapNodes.forEach((node, i) => {
-      layouted.push({
-        ...node,
-        position: { x: 100 + Math.random() * (width - 200), y: yOffset + Math.random() * 200 },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-      });
-    });
-
-    return layouted;
+    return layoutedNodes;
   }, []);
 
   // Update visualization when model changes
@@ -388,12 +387,12 @@ const ReactFlowApp: React.FC = () => {
       ...gaps.map(e => ({ id: e.id, type: 'gap', data: e })),
     ];
 
-    // Apply layout
-    const layoutedNodes = computeLayout(nodeList);
-    setNodes(layoutedNodes);
-
-    // Build edges
+    // Build edges (needed for layout calculation)
     const edgeList = buildEdges();
+
+    // Apply dynamic layout based on graph structure
+    const layoutedNodes = computeLayout(nodeList, edgeList);
+    setNodes(layoutedNodes);
     setEdges(edgeList);
   }, [model, computeGaps, buildEdges, computeLayout, setNodes, setEdges]);
 
