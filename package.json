@@ -29,18 +29,18 @@
   "author": "Stacey Vetzal <stacey@vetzal.com>",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.20.0",
+    "@modelcontextprotocol/sdk": "^1.22.0",
     "d3": "^7.8.5",
-    "fastmcp": "^3.19.1",
+    "fastmcp": "^3.23.1",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
-    "@types/node": "^20.10.0",
+    "@types/node": "^20.19.25",
     "@types/uuid": "^9.0.7",
     "@vitest/ui": "^3.2.4",
-    "electron": "^28.0.0",
+    "electron": "^39.2.3",
     "electron-builder": "^24.9.1",
     "typescript": "^5.3.3",
     "vitest": "^3.2.4"
