@@ -29,7 +29,7 @@
   "author": "Stacey Vetzal <stacey@vetzal.com>",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.22.0",
+    "@modelcontextprotocol/sdk": "^1.25.0",
     "d3": "^7.8.5",
     "fastmcp": "^3.23.1",
     "uuid": "^13.0.0",
@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
-    "@types/node": "^20.19.25",
+    "@types/node": "^20.19.27",
     "@vitest/ui": "^3.2.4",
     "electron": "^39.2.7",
     "electron-builder": "^26.0.12",
